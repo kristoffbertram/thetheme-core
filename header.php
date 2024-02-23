@@ -1,3 +1,13 @@
+<?php
+/**
+ * The Theme Header
+ * 
+ * @since 1.0.0
+ * 
+ * Sets the @thetheme <html> headers and
+ * injects the header template parts
+ */
+?>
 <!DOCTYPE html>
 <html <?php language_attributes(); ?>>
 <head>
