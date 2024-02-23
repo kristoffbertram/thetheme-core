@@ -6,6 +6,8 @@ This is a stand-alone update to @thetheme containing updates to each of @thethem
 
 ## Installing
 
+#### Confirm
+
 Confirm if the following files in your theme remained unaltered and can be replaced;
 
 * thetheme_modules
@@ -18,7 +20,15 @@ Confirm if the following files in your theme remained unaltered and can be repla
 * CHANGELOG.md (will replace @thetheme/CHANGELOG. For the very latest version, refer to @thethewe)
 * **package.json**
 
-and clone this repo into your working directory.
+#### Cloning
+
+1. Clone this repository to a separate directory.
+
+```
+git clone git@github-thermoking:kristoffbertram/thetheme-core.
+```
+
+2. Copy the required files.
 
 ## Usage
 
