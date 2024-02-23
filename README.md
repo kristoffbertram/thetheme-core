@@ -1,60 +1,67 @@
-# The Theme (thetheme)
+# The Theme Core (thetheme)
 
 _Version 1.0.0_
 
-This is my noble attempt at a as-versatile-as-possible Best Practices Boilerplate WordPress Theme using Tailwind. It offers a build-process, sets up certain "enhancements" to WordPress, and using Advanced Custom Fields; offers a bullet-proof technique of adding custom blocks.  
+This is a stand-alone update to @thetheme containing updates to each of @thetheme's inner workings. It intents to limit itself to thetheme-modules and configuration options.  
 
-This is a "developer-first" Theme and may not be suited for beginners to WordPress.  
-It assumes you understand WP's Theme Hierarchy.
+## Installing
 
-## Developing
+Confirm if the following files in your theme remained unaltered and can be replaced;
 
-### WordPress' functions.php
+* thetheme_modules
+* functions.php
+* header.php
+* footer.php
+* safelist.txt
+* style.css
+* README.md (will replace @thetheme/README. For the very latest version, refer to @thethewe)
+* CHANGELOG.md (will replace @thetheme/CHANGELOG. For the very latest version, refer to @thethewe)
+* **package.json**
 
-Is delegated to thetheme-functions.php. Use this file to extend your theme.
+and clone this repo into your working directory.
+
+## Usage
 
 ### Theme Images
 
-There is no support for further image processing at this time. Any image outside of WP's Media Library is used (and can be stored) as is.
-
-Thetheme itself does offer support for a multitude of formats and sizes.  
+Built-in support for custom image sizes.  
 Refer to thetheme-modules/images for more information.
 
-### Theme CSS & JS
-
-Thetheme is set up to enqueue app.css and app.js.  
-Edit /src/css and /src/js/ and run the command below.  
-Your built files will appear in ~/css/ and ~/js/.
-
 ```
-npm run watch
-```
-
-### ACF
-
-Create a new block by defining it in ~/blocks/.  
-Optionally: add its output your build process in webpack.mix.js.  
-ACF will sync your blocks to ~/acf-json/ allow you to programmatically or manually modify them.
-
-```
-mix.postCss("blocks/your-block/your-block.css", "css");
+$selected_image_sizes = [
+    'thumb-xs','thumb-sm','thumb-md','thumb-lg','thumb-xl',
+    '169-sm','169-md','169-lg','169-xl',
+    '43-sm','43-md','43-lg'
+];
+$custom_image_sizes = [
+    //["your-custom-square", 500, 500, false, "Custom Square Medium"]
+];
+$theme_image_sizes = new The_Theme_Image_Sizes($selected_image_sizes, $custom_image_sizes);
 ```
 
-See thetheme-modules/acf for more information.
+### Theme Allow Custom Mimes
 
-### The Theme Helper
+Allow uploading custom mimes to WP's Media Library.
 
-Sets up Tailwind for use with WordPress' theme.json. 
+```
+$new_mimes = [
+    'svg' => 'image/svg+xml',
+    'zip' => 'application/zip',
+    'gz'  => 'application/x-gzip',
+];
+new The_Theme_Allow_Custom_Mimes($new_mimes);
+```
 
-## Upgrading
+## TODO
 
-Upgrade thetheme by replacing the following files;
+* Introduce more configuration methods for Modules. 
+    * Menu's
+    * Card Scaffolder
+    * thetheme-helper
+    * ShouldWrapACF
+    * Security in particular is lacking and requires header settings.
+        * Enable/disable XMLRPC
 
-* thetheme_modules
-* functions.php (unless modified)
-* header.php (unless modified)
-* footer.php (unless modified)
-* safelist.txt
-* style.css (unless modified)
-* package.json (unless modified)
-* README.md
+## Changelog
+
+Please refer to CHANGELOG.md.
