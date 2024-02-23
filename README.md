@@ -2,7 +2,7 @@
 
 _Version 1.0.0_
 
-This is a stand-alone update to @thetheme containing updates to each of @thetheme's inner workings. It intents to limit itself to thetheme-modules and configuration options.  
+This is a stand-alone update to @thetheme containing updates to each of its inner workings. It intents to limit itself to ``~/thetheme-modules`` and configuration options (as user defined in ``~/thetheme-functions.php``).  
 
 ## Installing
 
@@ -16,8 +16,8 @@ Confirm if the following files in your theme remained unaltered and can be repla
 * footer.php
 * safelist.txt
 * style.css
-* README.md (will replace @thetheme/README. For the very latest version, refer to @thethewe)
-* CHANGELOG.md (will replace @thetheme/CHANGELOG. For the very latest version, refer to @thethewe)
+* README.md (will replace @thetheme/README. For the very latest version, refer to @thetheme)
+* CHANGELOG.md (will replace @thetheme/CHANGELOG. For the very latest version, refer to @thetheme)
 * **package.json**
 
 #### Cloning
