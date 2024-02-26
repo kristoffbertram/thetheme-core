@@ -35,7 +35,7 @@ function thetheme_enqueue() {
 	$css_version_no = filemtime(get_stylesheet_directory() . '/css/app.css');
 	$js_version_no  = filemtime(get_stylesheet_directory() . '/js/app.js');
 
-	wp_enqueue_style('thetheme', get_stylesheet_directory_uri() . '/css/app.css', array(), $$css_version_no);
+	wp_enqueue_style('thetheme', get_stylesheet_directory_uri() . '/css/app.css', array(), $css_version_no);
 	wp_enqueue_script('thetheme', get_stylesheet_directory_uri() . '/js/app.js', array(), $js_version_no, true);
 
 }
