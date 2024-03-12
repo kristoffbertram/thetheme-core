@@ -16,6 +16,7 @@
 function thetheme_add_slug_body_classes($classes) {
 
 	global $post;
+    $classes = array();
 	
 	if (isset($post)) {
 	
@@ -51,6 +52,7 @@ add_filter( 'body_class', 'thetheme_add_slug_body_classes' );
 function thetheme_add_category_body_post_classes($classes) {
 	
 	global $post;
+    $classes = array();
 
 	foreach((get_the_category($post->ID)) as $category) {
 	

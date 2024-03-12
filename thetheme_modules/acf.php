@@ -18,7 +18,6 @@ function thetheme_acf_blocks() {
     
     $blocks_dir = get_stylesheet_directory() . '/blocks';
     
-    
     if (file_exists($blocks_dir)) {
         
         $dir = new DirectoryIterator($blocks_dir);
@@ -28,10 +27,8 @@ function thetheme_acf_blocks() {
             if (!$fileinfo->isDir() || $fileinfo->isDot()) {
                 continue;
             }
-
             
             $block_path = $blocks_dir . '/' . $fileinfo->getFilename();
-
             
             register_block_type($block_path);
         }
