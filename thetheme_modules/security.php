@@ -87,10 +87,18 @@ define( 'DISALLOW_FILE_EDIT', true );
 
 /**
  * Disable XMLRPC
+ * If you require XMLRPC, be sure to remove the corresponding header as well
  * 
  * @since 1.0.0
  */
 add_filter('xmlrpc_enabled', '__return_false');
+
+function the_remove_x_pingback_header($headers) {
+
+    unset($headers['X-Pingback']);
+    return $headers;
+}
+add_filter('wp_headers', 'the_remove_x_pingback_header');
 
 /**
  * Disable REST access to authed users only.

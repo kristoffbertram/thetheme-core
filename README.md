@@ -1,6 +1,6 @@
 # The Theme Core (thetheme)
 
-_Version 1.0.0_
+_Version 1.0.1_
 
 This is a stand-alone update to @thetheme containing updates to each of its inner workings. It intents to limit itself to ``~/thetheme-modules`` and configuration options (as user defined in ``~/thetheme-functions.php``).  
 
@@ -69,8 +69,6 @@ new The_Theme_Allow_Custom_Mimes($new_mimes);
     * Card Scaffolder
     * thetheme-helper
     * ShouldWrapACF
-    * Security in particular is lacking and requires header settings.
-        * Enable/disable XMLRPC
 
 ## Changelog
 
