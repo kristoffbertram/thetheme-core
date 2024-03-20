@@ -16,28 +16,32 @@
 function thetheme_add_slug_body_classes($classes) {
 
 	global $post;
-    $classes = array();
-	
+    $parent = '';
+    
 	if (isset($post)) {
 	
 		$classes[] = $post->post_type.'-'.$post->post_name.' '.$post->post_name;
+
+        if (isset($post->post_parent))	{
+
+            $ancestors=get_post_ancestors($post->ID);
+            $root = count($ancestors)-1;
+            
+            if (isset($root) && $root >= 0) {
+
+                $parent = $ancestors[$root];
+
+            }
+    
+        } else {
+    
+            $parent = $post->ID;
+        }
 	
 	}
 
-    if ($post->post_parent)	{
-
-        $ancestors=get_post_ancestors($post->ID);
-        $root = count($ancestors)-1;
-        $parent = $ancestors[$root];
-
-    } else {
-
-        $parent = $post->ID;
-    }
-
     $classes[] = get_post_field( 'post_name', $parent );
     $classes[] = "parent-".get_post_field( 'post_name', $parent );
-
 
     return $classes;
 
@@ -52,13 +56,20 @@ add_filter( 'body_class', 'thetheme_add_slug_body_classes' );
 function thetheme_add_category_body_post_classes($classes) {
 	
 	global $post;
-    $classes = array();
 
-	foreach((get_the_category($post->ID)) as $category) {
-	
-		$classes[] = 'cat-' . $category->cat_ID . '-id';
+    if (isset($post)) {
+    
+        foreach((get_the_category($post->ID)) as $category) {
 
-	}
+            if (isset($category)) {
+
+                $classes[] = 'cat-' . $category->cat_ID . '-id';
+
+            }
+        
+        }
+
+    }
 
 	return $classes;
 }
