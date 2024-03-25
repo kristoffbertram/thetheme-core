@@ -23,12 +23,7 @@ Confirm if the following files in your theme remained unaltered and can be repla
 #### Cloning
 
 1. Clone this repository to a separate directory.
-
-```
-git clone git@github-thermoking:kristoffbertram/thetheme-core.
-```
-
-2. Copy the required files.
+2. Review and copy the required files.
 
 ## Usage
 
