@@ -5,9 +5,51 @@
  * Image & Thumbnail definitions
  * 
  * @package thetheme
- * @version 1.0.0
+ * @version 1.0.2
  *
  */
+
+/**
+ * A skeleton image outputter.
+ * 
+ * @since 1.0.2
+ */
+function thetheme_image( $image_id , $size , $class_name = null , $as_array = false ) {
+
+    if ($image_id && $size) {
+
+        $image_src = wp_get_attachment_image_src( $image_id , $size )[0]; // first
+        $image_srcset = wp_get_attachment_image_srcset( $image_id, $size );
+        $image_sizes = '(max-width: 320px) 320px,(max-width: 640px) 640px,(max-width: 960px) 960px,(max-width: 1024px) 1024px,(max-width: 1280px) 1280px,(max-width: 1600px) 1600px,1024px';
+
+        if ($image_src) {
+        
+            $image = '<img src="' . esc_attr( $image_src ) . '" srcset="' . esc_attr( $image_srcset ) . '" sizes="' . esc_attr( $image_sizes ) . '"';
+            if ($class_name) {
+                $image .= ' class=" . $class_name . "';
+            }
+            $image .= ' />';
+
+        }
+
+        if ($as_array) {
+
+            return array(
+                "image_src" => $image_src ,
+                "image_srcset" => $image_srcset ,
+                "image_sizes" => $image_sizes ,
+                "image" => $image
+            );
+
+        } else {
+
+            return $image;
+
+        }
+
+    }
+
+}
 
 /**
  * Make WP use GD
@@ -164,14 +206,15 @@ class The_Theme_Image_Sizes {
     }
 
     public function add_sizes_to_media_library($sizes) {
-        // Combine predefined and custom sizes
+        
         $all_sizes = array_merge($this->predefined_image_sizes, $this->custom_image_sizes);
 
         foreach ($all_sizes as $size) {
+            
             $name = $size[0];
-            // Add to media library if specifically selected or if it's a custom size.
+            
             if (in_array($name, $this->selected_image_sizes) || $this->is_custom_size($name)) {
-                $sizes[$name] = $size[4]; // Descriptive name for media library
+                $sizes[$name] = $size[4];
             }
         }
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.2] - 2024-03-25
+
+### Changed
+
+- ``thetheme_includes`` now accepts a ``$dir`` parameter.
+
+### Added
+
+- Added ``thetheme_image``. Outputs (or returns) an appropriate responsive image.
+
 ## [1.0.1] - 2024-03-20
 
 ### Changed

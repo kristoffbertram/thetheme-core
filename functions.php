@@ -3,14 +3,21 @@
  * The Theme Includes Loader
  * 
  * @since 1.0.0
+ * @param string|null $dir The optional directory path, relative to your theme, can be used to include additional PHP files from.
  * 
  * Useful functions and overrides to WordPress. 
  * While you can modify this file to your own preference, 
  * it is advised to use thetheme-functions.php
  */
-function thetheme_includes() {
+function thetheme_includes( $dir = null ) {
 
-    $thetheme_includes_dir = __DIR__."/thetheme_modules/";
+    if ( empty ( $dir ) ) {
+
+        $dir = "/thetheme_modules/";
+
+    }
+
+    $thetheme_includes_dir = __DIR__. $dir;
 
     array_map(function($file) { 
 
