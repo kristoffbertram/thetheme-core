@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.3] - 2024-04-04
+
+- Added ``the_duplicate_post_as_draft``.
+
 ## [1.0.2] - 2024-03-25
 
 ### Changed

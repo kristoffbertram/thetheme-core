@@ -1,6 +1,6 @@
 # The Theme Core (thetheme)
 
-_Version 1.0.2_
+_Version 1.0.3_
 
 This is a stand-alone update to @thetheme containing updates to each of its inner workings. It intents to limit itself to ``~/thetheme-modules`` and configuration options (as user defined in ``~/thetheme-functions.php``).  
 
