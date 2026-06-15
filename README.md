@@ -1,0 +1,90 @@
+# thetheme-core
+
+The **engine** behind the shared `thetheme_*` WordPress scaffold — the small,
+project-agnostic runtime that every project-level theme depends on and stays in
+sync with. Distributed as a **public Composer package**; consumers pin a version.
+
+This README is opinion-driven on purpose. It defines (1) what belongs in core and
+(2) the scaffolding doctrine the best-use template and every descendant project
+should follow. Adhering to it is the point.
+
+## What core is (and only this)
+
+Core is the generic module runtime — the files that could drop into *any* project
+unchanged. From the reference theme (`the reference theme`) that is the
+`thetheme_modules/` set:
+
+```
+thetheme_modules/
+├── acf-loader.php     ACF block/field registration engine (+ legacy carve-out, see below)
+├── defaults.php       Generic theme defaults / supports
+├── developing.php     Dev-only helpers
+├── editing.php        Block-editor tweaks (incl. iframe editor-style injection)
+├── images.php         Generic image sizes / handling
+├── subsites.php       Subsite resolver + editor-style injector (+ registration carve-out)
+├── wp-admin.php       Admin shell tweaks
+└── wp-login.php       Login screen tweaks
+```
+
+Plus a `bootstrap.php` that includes these (the package's entry point), called from
+each theme's `functions.php`.
+
+**Not core:** `thetheme_functions/` (app logic), `thetheme_components/`,
+`thetheme_blocks/`, `thetheme_src/`, `thetheme_templates/`,
+`thetheme_template-parts/`. These are the **app / presentation layer** — they live
+in the project (and are demonstrated in `~/Development/thetheme`), never in the
+engine.
+
+## The carve-out contract (core stays byte-identical)
+
+Core files must contain **zero project data**. Where core needs a per-project
+list, the project injects it via a filter; core ships only the default:
+
+| Core file | Project data removed | Injected via |
+|---|---|---|
+| `subsites.php` | `thetheme_get_registered_subsites()` body | `apply_filters('thetheme_registered_subsites', [])` — project returns its array (e.g. `thetheme_app/subsites.config.php`) |
+| `acf-loader.php` | the `$legacy` block array | `apply_filters('thetheme_acf_legacy_blocks', $defaults)` — project adds e.g. `acf/carouselitem` (a consuming project) |
+
+After this, every core file is identical across deployments and `composer update`
+is a safe, mechanical sync.
+
+## Scaffolding doctrine for the app/template layer
+
+The project layer is organised **by purpose, not by type** — a reader should guess
+where code lives from its responsibility alone.
+
+```
+thetheme_functions/        Behavioural code, purpose-split:
+  app/                     App wiring (menus, sections, templates, breadcrumb, …)
+  blocks/                  Block registration glue / shared block helpers
+  post-types/              CPT + taxonomy registration
+thetheme_app/              Project config the engine reads:
+  subsites.config.php      returns the registered-subsites array
+  acf-legacy.php           returns the project legacy-block list
+thetheme_components/       Reusable partials — card.php link-neutralisation pattern
+thetheme_blocks/<name>/    Self-contained block: block.json, template.php, fields.php
+                           (+ co-located block.scss / block.js / view.php)
+thetheme_src/{js,scss,fonts,images}/   Front-end source; built to assets/ (Mix)
+thetheme_template-parts/   Composable fragments
+thetheme_templates/        Full page templates (selectable by slug)
+```
+
+### Principles
+
+1. **Purpose over type.** New code goes to the directory naming its job.
+2. **Core stays project-agnostic.** If a file names a specific site/client/block,
+   it's app, not core. Litmus: would it drop unchanged into any project?
+3. **Carve out extension points** (see contract above) so core files stay syncable.
+4. **One responsibility per file.** The loader includes whole directories anyway.
+5. **Self-contained blocks.** One block = one folder, copyable between projects.
+
+## Versioning & consumption
+
+Tag releases `core-vX.Y`. Themes require it via Composer and record the pinned
+version in their (gitignored) `CLAUDE.md` core-tracking block, alongside any
+intentional deviations.
+
+## Status
+
+Bootstrapped 2026-06-15. Engine **not yet extracted** from `the reference theme`. See
+`~/Development/ROADMAP.md` (thetheme section).
