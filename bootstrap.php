@@ -27,4 +27,32 @@ if (!function_exists('thetheme_core_boot')) {
     }
 }
 
-thetheme_core_boot();
+if (!function_exists('thetheme_load_app')) {
+    /**
+     * Load a theme's app layer (thetheme_functions/, thetheme_app/) recursively.
+     * Called by the boot mu-plugin so loader code never lives in functions.php
+     * (where it could be edited out). See mu-plugin/thetheme-boot.php.
+     */
+    function thetheme_load_app(string $theme_dir): void {
+        foreach (['/thetheme_functions/', '/thetheme_app/'] as $rel) {
+            $dir = rtrim($theme_dir, '/') . $rel;
+            if (!is_dir($dir)) {
+                continue;
+            }
+            $it = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
+            );
+            foreach ($it as $file) {
+                if ($file->isFile() && $file->getExtension() === 'php') {
+                    require_once $file->getPathname();
+                }
+            }
+        }
+    }
+}
+
+// Boot only inside WordPress — not during composer script runs (e.g. the installer),
+// where WP functions like add_action() don't exist.
+if (defined('ABSPATH')) {
+    thetheme_core_boot();
+}

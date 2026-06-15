@@ -78,13 +78,52 @@ thetheme_templates/        Full page templates (selectable by slug)
 4. **One responsibility per file.** The loader includes whole directories anyway.
 5. **Self-contained blocks.** One block = one folder, copyable between projects.
 
+## Resilient loading (boot mu-plugin)
+
+WordPress only auto-loads `functions.php` from the theme, and that file is editable —
+so any loader placed there can be removed. To prevent that, the loaders live in a
+must-use plugin instead:
+
+- `mu-plugin/thetheme-boot.php` boots core on `setup_theme` (so core helpers are
+  available in `functions.php`) and loads the active theme's app layer
+  (`thetheme_functions/`, `thetheme_app/`) on `after_setup_theme` via
+  `thetheme_load_app()`.
+- `src/Installer.php` copies that stub into `wp-content/mu-plugins/` automatically
+  during `composer install/update` — no manual placement.
+
+Result: `functions.php` carries **no loader code**; editing or gutting it cannot
+remove core or app loading.
+
+### Consuming theme wiring
+
+```jsonc
+{
+  "require": { "kristoffbertram/thetheme-core": "^1.1" },
+  "repositories": [
+    { "type": "vcs", "url": "<public-git-url>" }
+  ],
+  "scripts": {
+    "post-install-cmd": "KristoffBertram\\ThethemeCore\\Installer::copyMuPlugin",
+    "post-update-cmd":  "KristoffBertram\\ThethemeCore\\Installer::copyMuPlugin"
+  }
+}
+```
+
+`functions.php` then needs nothing more than to exist (WP requires the file); the
+mu-plugin handles loading. Non-standard content dirs: set
+`extra.thetheme-mu-plugins-dir`.
+
 ## Versioning & consumption
 
-Tag releases `core-vX.Y`. Themes require it via Composer and record the pinned
-version in their (gitignored) `CLAUDE.md` core-tracking block, alongside any
-intentional deviations.
+Tag releases as semver (`v1.0.0`, `v1.1.0`, …) so Composer's VCS resolver picks
+them up — a `core-vX` prefix would not parse as a version. Themes pin a range
+(`^1.1`) and record the resolved version in their (gitignored) `CLAUDE.md`
+core-tracking block, alongside any intentional deviations.
 
 ## Status
 
-Bootstrapped 2026-06-15. Engine **not yet extracted** from `the reference theme`. See
-`~/Development/ROADMAP.md` (thetheme section).
+- **v1.0.0** (2026-06-15) — engine extracted from `the reference theme` (8 modules + bootstrap).
+- **v1.1.0** (2026-06-15) — resilient boot mu-plugin + composer installer; app loader
+  moved into core (`thetheme_load_app()`).
+
+See `~/Development/ROADMAP.md` (thetheme section).
