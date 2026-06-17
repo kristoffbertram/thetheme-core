@@ -150,21 +150,16 @@ function thetheme_enqueue_subsite_assets(): void {
 add_action('wp_enqueue_scripts', 'thetheme_enqueue_subsite_assets', 20);
 
 /**
- * Editor styles: resolve subsite in admin using section, template and/or admin_conditions.
- *
- * Injects the resolved stylesheet into the block editor iframe via
- * `block_editor_settings_all`. `enqueue_block_editor_assets` would only reach
- * the admin shell — the Gutenberg post canvas is iframed (WP 6.3+) and only
- * picks up entries in $settings['styles'].
+ * Resolve the editor.css (relative) for the post being edited, using the subsite's
+ * section / template / admin_conditions. Falls back to the www default.
  */
-function thetheme_inject_subsite_editor_styles(array $settings, $context): array {
+function thetheme_resolve_editor_css_rel(): string {
     $subsites = thetheme_get_registered_subsites();
     $resolved = null;
 
-    $post_id = 0;
-    if (is_object($context) && isset($context->post) && $context->post instanceof WP_Post) {
-        $post_id = (int) $context->post->ID;
-    }
+    $post_id = isset($_GET['post'])
+        ? (int) $_GET['post']
+        : (function_exists('get_the_ID') ? (int) get_the_ID() : 0);
 
     if ($post_id) {
         // 1) Section-based detection in admin
@@ -207,29 +202,37 @@ function thetheme_inject_subsite_editor_styles(array $settings, $context): array
         }
     }
 
-    $rel = ($resolved && !empty($subsites[$resolved]['editor']))
+    return ($resolved && !empty($subsites[$resolved]['editor']))
         ? ltrim($subsites[$resolved]['editor'], '/')
         : 'assets/css/www/editor.css';
-
-    $css_path = get_stylesheet_directory() . '/' . $rel;
-    if (!file_exists($css_path)) {
-        return $settings;
-    }
-
-    $css = file_get_contents($css_path);
-    if ($css === false || $css === '') {
-        return $settings;
-    }
-
-    if (!isset($settings['styles']) || !is_array($settings['styles'])) {
-        $settings['styles'] = [];
-    }
-
-    $settings['styles'][] = [
-        'css'     => $css,
-        'baseURL' => get_stylesheet_directory_uri() . '/' . dirname($rel) . '/',
-    ];
-
-    return $settings;
 }
-add_filter('block_editor_settings_all', 'thetheme_inject_subsite_editor_styles', 10, 2);
+
+/**
+ * Editor canvas styles: load the resolved editor.css as a native <link> INSIDE the
+ * block editor iframe via `enqueue_block_assets` (fires in the iframe since WP 6.3)
+ * gated by `is_admin()`.
+ *
+ * NOT `block_editor_settings_all`: that routes CSS through Gutenberg's in-browser
+ * `transformStyles` scoper, which can't parse Tailwind v4 (`@property`, `@layer`,
+ * `color-mix()`, nesting) and silently drops the whole sheet — so nothing applies.
+ * A native <link> is parsed by the browser, exactly like the front end.
+ */
+function thetheme_enqueue_subsite_editor_styles(): void {
+    if (!is_admin()) {
+        return; // editor context only (incl. the iframe); never the front end
+    }
+
+    $rel  = thetheme_resolve_editor_css_rel();
+    $path = get_stylesheet_directory() . '/' . $rel;
+    if (!file_exists($path)) {
+        return;
+    }
+
+    wp_enqueue_style(
+        'thetheme-editor',
+        get_stylesheet_directory_uri() . '/' . $rel,
+        [],
+        filemtime($path)
+    );
+}
+add_action('enqueue_block_assets', 'thetheme_enqueue_subsite_editor_styles');

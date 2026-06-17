@@ -132,5 +132,11 @@ core-tracking block, alongside any intentional deviations.
   - **BREAKING (behaviour):** subsite script enqueues no longer declare `['jquery']`
     as a dependency (now `[]`). Deployments that rely on jQuery being auto-enqueued
     via the theme must enqueue it themselves. Verify per project on sync.
+- **v1.3.0** (2026-06-17) — editor canvas styles now load as a **native `<link>`
+  inside the iframe** via `enqueue_block_assets` + `is_admin()`, replacing the
+  `block_editor_settings_all` injection. The old path routed CSS through Gutenberg's
+  `transformStyles` scoper, which can't parse Tailwind v4 (`@property`, `@layer`,
+  `color-mix()`, nesting) and silently dropped the whole sheet — so no editor styles
+  applied. Subsite resolution preserved (`thetheme_resolve_editor_css_rel()`).
 
 See `~/Development/ROADMAP.md` (thetheme section).
