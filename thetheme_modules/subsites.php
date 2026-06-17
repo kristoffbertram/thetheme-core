@@ -95,7 +95,7 @@ function thetheme_resolve_current_subsite_id(): ?string {
     return $cached = null;
 }
 
-function thetheme_get_template_part(string $type = 'header'): string {
+function thetheme_get_template_part(string $type = 'header' , $args = []): string {
     $subsite_id = thetheme_resolve_current_subsite_id();
     if ($subsite_id) {
         $subsites = thetheme_get_registered_subsites();
@@ -134,7 +134,7 @@ function thetheme_enqueue_subsite_assets(): void {
             wp_enqueue_script(
                 "subsite-script-{$subsite_id}",
                 get_stylesheet_directory_uri() . '/' . $script_rel,
-                ['jquery'],
+                [],
                 file_exists($script_path) ? filemtime($script_path) : $ver,
                 true
             );
@@ -145,7 +145,7 @@ function thetheme_enqueue_subsite_assets(): void {
 
     // Fallback: www
     wp_enqueue_style('thetheme', get_stylesheet_directory_uri() . '/assets/css/www/app.css', [], $ver);
-    wp_enqueue_script('thetheme', get_stylesheet_directory_uri() . '/assets/js/www/app.js', ['jquery'], $ver, true);
+    wp_enqueue_script('thetheme', get_stylesheet_directory_uri() . '/assets/js/www/app.js', [], $ver, true);
 }
 add_action('wp_enqueue_scripts', 'thetheme_enqueue_subsite_assets', 20);
 

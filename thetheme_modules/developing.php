@@ -3,11 +3,14 @@ if ( ! function_exists( 'fgc' ) ) {
 
     function fgc($fgc , $echo = true)
     {
+        // Path-traversal guard: only read files that resolve inside the theme dir.
+        $theme_dir = realpath(get_stylesheet_directory());
+        $resolved  = realpath($theme_dir . $fgc);
 
-        if (file_exists(get_stylesheet_directory().$fgc)):
-            echo file_get_contents(get_stylesheet_directory().$fgc);
-        endif;
+        if (!$theme_dir || !$resolved) return;
+        if (strpos($resolved, $theme_dir . DIRECTORY_SEPARATOR) !== 0) return;
 
+        echo file_get_contents($resolved);
     }
 
 }

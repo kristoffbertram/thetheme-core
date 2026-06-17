@@ -125,5 +125,12 @@ core-tracking block, alongside any intentional deviations.
 - **v1.0.0** (2026-06-15) — engine extracted from `the reference theme` (8 modules + bootstrap).
 - **v1.1.0** (2026-06-15) — resilient boot mu-plugin + composer installer; app loader
   moved into core (`thetheme_load_app()`).
+- **v1.2.0** (2026-06-17) — upstreamed from the multi-subsite migration:
+  - `developing.php`: `fgc()` hardened against path traversal (resolves inside theme dir only). **Security fix.**
+  - `images.php`: `thetheme_image()` now emits `alt` and returns `image_alt`.
+  - `subsites.php`: `thetheme_get_template_part()` gains an optional `$args` param.
+  - **BREAKING (behaviour):** subsite script enqueues no longer declare `['jquery']`
+    as a dependency (now `[]`). Deployments that rely on jQuery being auto-enqueued
+    via the theme must enqueue it themselves. Verify per project on sync.
 
 See `~/Development/ROADMAP.md` (thetheme section).
