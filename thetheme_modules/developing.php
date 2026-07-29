@@ -10,7 +10,13 @@ if ( ! function_exists( 'fgc' ) ) {
         if (!$theme_dir || !$resolved) return;
         if (strpos($resolved, $theme_dir . DIRECTORY_SEPARATOR) !== 0) return;
 
-        echo file_get_contents($resolved);
+        $contents = file_get_contents($resolved);
+
+        if (!$echo) {
+            return $contents;
+        }
+
+        echo $contents;
     }
 
 }
