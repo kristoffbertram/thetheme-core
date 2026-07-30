@@ -91,8 +91,10 @@ add_filter('acf/blocks/wrap_frontend_innerblocks', function ($wrap, $name) {
     return false;
 }, 10, 2);
 
-// Debug helper: list registered blocks in logs (optional; comment out when done)
+// Debug helper: list registered blocks in the log on an admin request. Off by default —
+// opt in per project with add_filter('thetheme_log_registered_blocks', '__return_true').
 add_action('admin_init', function () {
+    if ( ! apply_filters('thetheme_log_registered_blocks', false) ) return;
     if ( ! current_user_can('manage_options') ) return;
     $names = array_keys( WP_Block_Type_Registry::get_instance()->get_all_registered() );
     error_log('[thetheme] Registered blocks: ' . implode(', ', $names));
