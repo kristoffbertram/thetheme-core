@@ -78,6 +78,66 @@ thetheme_templates/        Full page templates (selectable by slug)
 4. **One responsibility per file.** The loader includes whole directories anyway.
 5. **Self-contained blocks.** One block = one folder, copyable between projects.
 
+## Core blocks arrive unstyled — the project supplies the CSS
+
+`thetheme_modules/editing.php:5-13` disables both per-block asset strategies
+(`should_load_block_assets_on_demand`, `should_load_separate_core_block_assets`)
+and then dequeues **and deregisters** `wp-block-library`, plus dequeues
+`classic-theme-styles` and `global-styles`. This is deliberate: the engine assumes
+a Tailwind theme owns its own CSS and does not want core's stylesheet fighting it.
+Deregistering (not merely dequeuing) `wp-block-library` is what makes it stick — a
+dequeued handle stays registered and any later `wp_enqueue_style()` or dependency
+resolution brings it straight back.
+
+The consequence is the part to remember. **Any `core/*` block a project allows
+renders with no core CSS whatsoever.** There is no partial fallback — the two
+filters consolidate everything into the one handle that then gets deregistered.
+And because the dequeue runs on `wp_enqueue_scripts` (front end only) while the
+filters apply everywhere, a core block still looks right in the editor and breaks
+on the front end.
+
+### The allowlist is a project file, on purpose
+
+Which core blocks are allowed is a **project** decision and deliberately not part
+of this package: the filter lives in the consuming theme at
+`thetheme_functions/app/wp-allowed-blocks.php`, filtering `allowed_block_types_all`.
+It lists the permitted `core/*` blocks by hand, then merges in every block under
+`thetheme_blocks/` automatically by reading each `block.json`'s `name` — so custom
+blocks are never listed, only core ones. Every project allows a different set, which
+is why the file is hand-copied per project and why it does not belong in the engine.
+Do not move it here.
+
+### `_wp.scss` is the answer
+
+The styling half is a `thetheme_src/css/_wp.scss` partial in the consuming theme,
+imported from the SCSS entry **after** `@import "tailwindcss"` so its rules outrank
+preflight:
+
+```scss
+@import "tailwindcss";
+@import "_wp";
+```
+
+On Tailwind v4 the partial must open with `@reference "tailwindcss";` or its
+`@apply` rules will not resolve at build time.
+
+It carries the structural CSS core would have shipped — in practice the `cover`
+z-index/absolute-fill stack, `columns`/`column` flex behaviour (including `grow-0`
+so editor-set inline `flex-basis` values don't also grow), `media-text`'s grid and
+image object-fit, `navigation` list spacing, and `social-links`' `fill: currentColor`
+plus the visually-hidden label. **It grows with the allowlist**: one rule per allowed
+core block that needs one. A short `_wp.scss` — or none at all — is not drift; it
+means that project allows few core blocks, or only ones that need no layout.
+
+Token classes are the same story with a different home. `editing.php` derives the
+editor palette from `@theme { --color-*: … }` in the theme's SCSS entry and registers
+a font-size scale, so the editor writes `has-<slug>-color`,
+`has-<slug>-background-color` and `has-<slug>-font-size` classes into content — but
+`global-styles`, which would define them, is dequeued too. Define them in the SCSS
+entry beside the `@theme` block that names them, not in `_wp.scss`: the partial is
+for block *structure*, these are *tokens*. Watch the sanitised slug — a `2xl` font
+size becomes `has-2-xl-font-size`, with the hyphen.
+
 ## Resilient loading (boot mu-plugin)
 
 WordPress only auto-loads `functions.php` from the theme, and that file is editable —
