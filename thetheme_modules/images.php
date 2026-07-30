@@ -10,9 +10,9 @@ function thetheme_image( $image_id , $size , $class_name = null , $as_array = fa
 
         if ($image_src) {
 
-            $image = '<img alt="'.$image_alt.'" src="' . esc_attr( $image_src ) . '" srcset="' . esc_attr( $image_srcset ) . '" sizes="' . esc_attr( $image_sizes ) . '"';
+            $image = '<img alt="' . esc_attr( $image_alt ) . '" src="' . esc_attr( $image_src ) . '" srcset="' . esc_attr( $image_srcset ) . '" sizes="' . esc_attr( $image_sizes ) . '"';
             if ($class_name) {
-                $image .= ' class="' . $class_name . '"';
+                $image .= ' class="' . esc_attr( $class_name ) . '"';
             }
             $image .= ' />';
 
