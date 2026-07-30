@@ -62,8 +62,17 @@ thetheme_app/              Project config the engine reads:
   subsites.config.php      returns the registered-subsites array
   acf-legacy.php           returns the project legacy-block list
 thetheme_components/       Reusable partials — card.php link-neutralisation pattern
-thetheme_blocks/<name>/    Self-contained block: block.json, template.php, fields.php
-                           (+ co-located block.scss / block.js / view.php)
+thetheme_blocks/<name>/    Self-contained block — four files (+ co-located
+                           block.scss / block.js / view.php):
+  block.json               Registration + ACF config. Its acf.renderTemplate key
+                           names the render file, resolved relative to this folder.
+  template.php             The render file. ACF includes it per render; this is what
+                           outputs the block's markup.
+  fields.php               ACF field group, included on acf/init.
+  block.php                OPTIONAL. Included once on init at registration time, with
+                           no block arguments and no output capture — it cannot render.
+                           For registration-time code (a variation, a render_callback,
+                           an asset registration). Most blocks have none.
 thetheme_src/{js,scss,fonts,images}/   Front-end source; built to assets/ (Mix)
 thetheme_template-parts/   Composable fragments
 thetheme_templates/        Full page templates (selectable by slug)
