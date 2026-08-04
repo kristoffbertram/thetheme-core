@@ -19,15 +19,17 @@ thetheme_modules/
 ├── acf-loader.php     ACF block/field registration engine (+ legacy carve-out, see below)
 ├── defaults.php       Generic theme defaults / supports
 ├── developing.php     Dev-only helpers
-├── editing.php        Block-editor tweaks (incl. iframe editor-style injection)
+├── editing.php        Block-editor tweaks: core block CSS, font sizes, colour palette
 ├── images.php         Generic image sizes / handling
-├── subsites.php       Subsite resolver + editor-style injector (+ registration carve-out)
+├── subsites.php       Subsite resolver + editor-canvas stylesheet enqueue
 ├── wp-admin.php       Admin shell tweaks
 └── wp-login.php       Login screen tweaks
 ```
 
-Plus a `bootstrap.php` that includes these (the package's entry point), called from
-each theme's `functions.php`.
+Plus a `bootstrap.php` — the package's entry point, auto-included by Composer
+(`autoload.files`). It is **not** called from the theme's `functions.php`: since v1.1.0
+the boot mu-plugin does the loading, precisely so that editing or gutting
+`functions.php` cannot remove it. See *Resilient loading* below.
 
 **Not core:** `thetheme_functions/` (app logic), `thetheme_components/`,
 `thetheme_blocks/`, `thetheme_src/`, `thetheme_templates/`,
@@ -42,8 +44,8 @@ list, the project injects it via a filter; core ships only the default:
 
 | Core file | Project data removed | Injected via |
 |---|---|---|
-| `subsites.php` | `thetheme_get_registered_subsites()` body | `apply_filters('thetheme_registered_subsites', [])` — project returns its array (e.g. `thetheme_app/subsites.config.php`) |
-| `acf-loader.php` | the `$legacy` block array | `apply_filters('thetheme_acf_legacy_blocks', $defaults)` — project adds e.g. `acf/carouselitem` (a consuming project) |
+| `subsites.php` | the registered-subsites array | a **registration call**, not a filter: the project calls `thetheme_register_subsites([...])` from `thetheme_app/subsites.config.php`; core ships an empty registry and `thetheme_get_registered_subsites()` reads it back |
+| `acf-loader.php` | the `$legacy` block array | `apply_filters('thetheme_acf_legacy_blocks', [])` — project returns its list from `thetheme_app/acf-legacy.php` |
 
 After this, every core file is identical across deployments and `composer update`
 is a safe, mechanical sync.
@@ -147,6 +149,88 @@ entry beside the `@theme` block that names them, not in `_wp.scss`: the partial 
 for block *structure*, these are *tokens*. Watch the sanitised slug — a `2xl` font
 size becomes `has-2-xl-font-size`, with the hyphen.
 
+## The editor canvas is a second, hostile environment
+
+`subsites.php` enqueues the resolved editor stylesheet as a native `<link>` on
+`enqueue_block_assets`, gated by `is_admin()` (v1.3.0). Deliberately **not**
+`block_editor_settings_all`: that route hands the CSS to Gutenberg's in-browser
+`transformStyles` scoper, which cannot parse Tailwind v4 (`@property`, `@layer`,
+`color-mix()`, nesting) and silently drops the whole sheet. A native `<link>` is parsed
+by the browser, exactly like the front end.
+
+Getting the sheet *there* is only half of it. Three properties of the canvas bite, and
+none of them show up on the front end.
+
+### WordPress resets the canvas, and its reset outranks inheritance
+
+WordPress loads `wp-block-library/reset.min.css` into the editor and it ships:
+
+```css
+html :where(.editor-styles-wrapper){background:#fff;color:initial;font-family:serif;font-size:medium;line-height:normal}
+```
+
+`.editor-styles-wrapper` is the canvas container. A Tailwind theme sets its font in
+exactly one place — preflight's `html, :host { font-family: var(--font-sans, …) }` — which
+reaches that container only by **inheritance**, and a declaration made directly on an
+element beats an inherited value at any specificity. So the canvas renders in the
+browser's serif while the front end is perfect, which reads as "the custom fonts aren't
+loading" and sends people hunting for a 404 that isn't there.
+
+The engine cannot fix this for you: it ships no SCSS, and the editor stylesheet's source
+is a project file. Restate the token in the **editor-only** SCSS entry:
+
+```scss
+@import "shared";
+
+.editor-styles-wrapper {
+    font-family: var(--font-sans);
+}
+```
+
+Three things about that rule, all load-bearing:
+
+- **Unlayered.** Write it as plain top-level CSS. Tailwind v4 emits preflight inside
+  `@layer base`, and unlayered beats layered whatever the specificity. Where WP's reset
+  also arrives unlayered — it does when the canvas is not iframed and the reset comes
+  through the concatenated admin styles — plain specificity settles it instead: `0,1,0`
+  against the reset's `0,0,1`, since `:where()` contributes nothing. Either way the rule
+  wins, and neither route needs `!important`. Do not add one: an editor sheet that
+  shouts is one nobody can override per block.
+- **The token, not the family name.** `var(--font-sans)` keeps the `@theme` block the
+  single source of truth.
+- **In the editor entry only.** It must go *after* the shared import in the SCSS entry
+  that nothing else imports. Putting it in the shared partial or the theme entry ships
+  dead CSS to every front-end page.
+
+The same reset also `revert`s `list-style-type`, `margin` and `padding` on `ol`/`ul`
+inside the canvas, so list markers reappear in the editor while preflight still strips
+them on the front end. **Canvas appearance is not evidence about theme CSS.** Judge
+styling on the front end.
+
+### The canvas is not always an iframe
+
+Since WP 6.3 the canvas *can* be an iframe, and the v1.3.0 mechanism was written for
+that. It is not guaranteed: measured on WP 7.0.1, a post-editor screen with meta boxes
+registered (an SEO plugin, an ACF field group) and blocks registered at `apiVersion: 2`
+renders **no iframe at all** — `.editor-styles-wrapper` is a plain `div` in the admin
+document. Since any theme using ACF blocks registers `apiVersion: 2` blocks, this is the
+common case, not the exception.
+
+The native `<link>` works in both shapes, which is the point. But two things follow:
+the editor stylesheet is loaded into the **whole admin page** when the canvas is not
+iframed, so keep editor rules scoped to `.editor-styles-wrapper` rather than bare
+element selectors; and never reason about the canvas from the iframe assumption — open
+DevTools and check.
+
+### A missing editor stylesheet fails silently
+
+`thetheme_resolve_editor_css_rel()` returns the resolved subsite's declared `editor`
+path, falling back to `assets/css/www/editor.css`. If the resolved file does not exist,
+`thetheme_enqueue_subsite_editor_styles()` simply `return`s — the canvas gets **no theme
+CSS whatsoever**, with no notice and no log line. The front-end path has an
+unconditional fallback; this one has none. A subsite that declares an `editor` entry
+must have an SCSS source that actually builds it.
+
 ## Resilient loading (boot mu-plugin)
 
 WordPress only auto-loads `functions.php` from the theme, and that file is editable —
@@ -201,11 +285,14 @@ core-tracking block, alongside any intentional deviations.
   - **BREAKING (behaviour):** subsite script enqueues no longer declare `['jquery']`
     as a dependency (now `[]`). Deployments that rely on jQuery being auto-enqueued
     via the theme must enqueue it themselves. Verify per project on sync.
-- **v1.3.0** (2026-06-17) — editor canvas styles now load as a **native `<link>`
-  inside the iframe** via `enqueue_block_assets` + `is_admin()`, replacing the
+- **v1.3.0** (2026-06-17) — editor canvas styles now load as a **native `<link>` in the
+  canvas** via `enqueue_block_assets` + `is_admin()`, replacing the
   `block_editor_settings_all` injection. The old path routed CSS through Gutenberg's
   `transformStyles` scoper, which can't parse Tailwind v4 (`@property`, `@layer`,
   `color-mix()`, nesting) and silently dropped the whole sheet — so no editor styles
   applied. Subsite resolution preserved (`thetheme_resolve_editor_css_rel()`).
+  The commit message and the original note both said "inside the iframe"; that is the
+  case it was written for, not a guarantee — see *The editor canvas is a second, hostile
+  environment*, which is the current account of what the canvas actually is.
 
 See `~/Development/ROADMAP.md` (thetheme section).
