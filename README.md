@@ -75,7 +75,8 @@ thetheme_blocks/<name>/    Self-contained block — four files (+ co-located
                            no block arguments and no output capture — it cannot render.
                            For registration-time code (a variation, a render_callback,
                            an asset registration). Most blocks have none.
-thetheme_src/{js,scss,fonts,images}/   Front-end source; built to assets/ (Mix)
+thetheme_src/{js,css,fonts,images}/    Front-end source; built to assets/ (Mix).
+                           css/ holds the stylesheet entry and its partials.
 thetheme_template-parts/   Composable fragments
 thetheme_templates/        Full page templates (selectable by slug)
 ```
