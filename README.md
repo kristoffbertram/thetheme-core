@@ -254,7 +254,7 @@ remove core or app loading.
 {
   "require": { "kristoffbertram/thetheme-core": "^1.1" },
   "repositories": [
-    { "type": "vcs", "url": "<public-git-url>" }
+    { "type": "vcs", "url": "https://github.com/kristoffbertram/thetheme-core.git" }
   ],
   "scripts": {
     "post-install-cmd": "KristoffBertram\\ThethemeCore\\Installer::copyMuPlugin",
