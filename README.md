@@ -34,7 +34,7 @@ the boot mu-plugin does the loading, precisely so that editing or gutting
 **Not core:** `thetheme_functions/` (app logic), `thetheme_components/`,
 `thetheme_blocks/`, `thetheme_src/`, `thetheme_templates/`,
 `thetheme_template-parts/`. These are the **app / presentation layer** — they live
-in the project (and are demonstrated in `~/Development/thetheme`), never in the
+in the project (and are demonstrated in the template theme), never in the
 engine.
 
 ## The carve-out contract (core stays byte-identical)
@@ -295,5 +295,3 @@ core-tracking block, alongside any intentional deviations.
   The commit message and the original note both said "inside the iframe"; that is the
   case it was written for, not a guarantee — see *The editor canvas is a second, hostile
   environment*, which is the current account of what the canvas actually is.
-
-See `~/Development/ROADMAP.md` (thetheme section).
