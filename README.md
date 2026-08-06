@@ -77,6 +77,8 @@ thetheme_blocks/<name>/    Self-contained block — four files (+ co-located
                            an asset registration). Most blocks have none.
 thetheme_src/{js,css,fonts,images}/    Front-end source; built to assets/ (Mix).
                            css/ holds the stylesheet entry and its partials.
+                           A theme that builds elsewhere keeps its layout — see
+                           "Where asset paths come from" below.
 thetheme_template-parts/   Composable fragments
 thetheme_templates/        Full page templates (selectable by slug)
 ```
@@ -89,6 +91,53 @@ thetheme_templates/        Full page templates (selectable by slug)
 3. **Carve out extension points** (see contract above) so core files stay syncable.
 4. **One responsibility per file.** The loader includes whole directories anyway.
 5. **Self-contained blocks.** One block = one folder, copyable between projects.
+
+## Where asset paths come from
+
+Core never scans for build output; it resolves four theme-relative paths and hands
+them to WordPress. Every one has the same three-step precedence:
+
+1. **What the subsite declares** — `style`, `script` and `editor` on the registered
+   subsite entry. Highest priority, and the route to prefer.
+2. **A filter**, when no subsite declared it.
+3. **The literal default**, when nothing is filtered.
+
+| Asset | Subsite key | Filter | Default |
+|---|---|---|---|
+| Front-end stylesheet | `style` | `thetheme_default_stylesheet` | `assets/css/www/app.css` |
+| Front-end script | `script` | `thetheme_default_script` | `assets/js/www/app.js` |
+| Editor-canvas stylesheet | `editor` | `thetheme_default_editor_stylesheet` | `assets/css/www/editor.css` |
+| Login stylesheet | — | `thetheme_login_stylesheet` | `assets/css/wp-login.css` |
+
+The defaults describe this package's own build layout, and **they are a default, not a
+requirement**. A theme whose Mix pipeline builds to `css/` and `js/` — tuned by
+`mix.setResourceRoot('../')`, as the older lineage is — points the filters at its own
+layout rather than moving build output, which would rewrite every font and image URL
+inside the built CSS for no functional gain:
+
+```php
+add_filter('thetheme_default_stylesheet',        fn() => 'css/www/app.css');
+add_filter('thetheme_default_script',            fn() => 'js/www/app.js');
+add_filter('thetheme_default_editor_stylesheet', fn() => 'css/www/editor.css');
+add_filter('thetheme_login_stylesheet',          fn() => 'css/wp-login.css');
+```
+
+Paths are relative to `get_stylesheet_directory()`; a leading `/` is stripped, so
+`/css/app.css` and `css/app.css` are the same thing. Returning `''` from
+`thetheme_login_stylesheet` switches the login stylesheet off.
+
+**The three front-end/editor fallbacks fire less often than they look.** The front-end
+pair is reached only when no subsite resolves at all — any resolved entry returns
+before them, declared assets or not. The editor fallback is reached when no subsite
+resolves *or* the resolved one declares no `editor`. A project that declares `style`,
+`script` and `editor` on every subsite never touches them and does not need the
+filters.
+
+**The login screen has no subsite route, on purpose.** `wp-login.php` has no queried
+page, and the section and template branches of `thetheme_resolve_current_subsite_id()`
+both go through `is_page()` — only a project's own `conditions` callable could fire
+there, so in practice it resolves to `null`. The filter is the route in, and this is
+the path that had none before.
 
 ## Core blocks arrive unstyled — the project supplies the CSS
 
@@ -265,7 +314,8 @@ DevTools and check.
 ### A missing editor stylesheet fails silently
 
 `thetheme_resolve_editor_css_rel()` returns the resolved subsite's declared `editor`
-path, falling back to `assets/css/www/editor.css`. If the resolved file does not exist,
+path, falling back to the filtered default (see *Where asset paths come from*, above —
+`assets/css/www/editor.css` unless a theme redirects it). If the resolved file does not exist,
 `thetheme_enqueue_subsite_editor_styles()` simply `return`s — the canvas gets **no theme
 CSS whatsoever**, with no notice and no log line. The front-end path has an
 unconditional fallback; this one has none. A subsite that declares an `editor` entry
