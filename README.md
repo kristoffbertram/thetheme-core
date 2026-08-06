@@ -276,7 +276,7 @@ size becomes `has-2-xl-font-size`, with the hyphen.
 `color-mix()`, nesting) and silently drops the whole sheet. A native `<link>` is parsed
 by the browser, exactly like the front end.
 
-Getting the sheet *there* is only half of it. Three properties of the canvas bite, and
+Getting the sheet *there* is only half of it. Four properties of the canvas bite, and
 none of them show up on the front end.
 
 ### WordPress resets the canvas, and its reset outranks inheritance
@@ -324,6 +324,74 @@ The same reset also `revert`s `list-style-type`, `margin` and `padding` on `ol`/
 inside the canvas, so list markers reappear in the editor while preflight still strips
 them on the front end. **Canvas appearance is not evidence about theme CSS.** Judge
 styling on the front end.
+
+### The canvas caps blocks at WordPress's own content width
+
+Second symptom, same family: blocks sit in a narrow column in the editor while the
+front end is laid out wide. It reads as a broken layout and it is not one — nothing
+the theme wrote is being ignored.
+
+Two causes produce it, and **either one alone is enough**, which is why diagnosing
+from the first is a trap:
+
+- **The one-sided reset.** `thetheme_modules/editing.php` hooks its dequeue on
+  `wp_enqueue_scripts` — **front end only**. The editor therefore keeps
+  `global-styles` and WordPress's layout CSS while the front end loses them. With no
+  `theme.json` (the convention here keeps that file disable-only — switch core
+  behaviour off, never support rendering), the canvas falls back to WordPress's *own*
+  default `contentSize` and constrains every block to it, while Tailwind lays the
+  front end out wide. Identical asymmetry to the serif font above.
+- **WordPress's own cap, which survives the reset.** Core also ships
+  `html :where(.wp-block){max-width:…}` in the canvas. A theme that keeps the full
+  front-end style queue — one still on the conversion runway (see *Switching the
+  reset off*, above), or one that restores the queue itself — has **no dequeue
+  asymmetry at all** and still gets narrow blocks. So "we didn't dequeue anything"
+  is not a reason to skip the rule.
+
+**The fix is the project's, not the engine's.** Core is PHP-only: it ships no
+stylesheet, no build and no asset pipeline, so it has nothing to emit the rule
+*into*. The one PHP-only lever that would set a canvas width without CSS is the
+`theme.json` layer, and that layer is disable-only by convention — so that route is
+closed by an existing rule, not by preference. Write it by hand in the same
+editor-only entry as the font rule:
+
+```scss
+@import "shared";
+
+.editor-styles-wrapper {
+    font-family: var(--font-sans);
+}
+
+.wp-block,
+.wp-block-separator {
+    max-width: var(--content-width); /* the theme's own token — see below */
+}
+
+/* Left to Gutenberg on purpose — do not restate them:
+.wp-block[data-align="wide"] { … }
+.wp-block[data-align="full"] { … }
+*/
+```
+
+That is the whole portable rule. Four things about it:
+
+- **Both selectors.** `.wp-block-separator` needs its own entry; capping `.wp-block`
+  alone leaves a horizontal rule running the full canvas width inside an otherwise
+  constrained column.
+- **Leave `data-align="wide"` and `data-align="full"` alone.** Those variants are
+  Gutenberg's to size, and capping them is how a full-width hero stops being
+  full-width in the editor.
+- **The theme's token, not a number.** Use whatever the theme already expresses its
+  content width in — a custom property, or `@apply` with the theme's own max-width
+  utility if it is a Tailwind project. Where that value lives varies: on this
+  scaffold, layout utilities usually sit in the PHP templates rather than in SCSS, and
+  a theme still carrying a `theme.json` may have it in `settings.layout.contentSize`.
+  Grep all three before deciding the theme hasn't got one. (In practice three
+  independent themes on this scaffold have each landed on the same 80rem / 1280px
+  cap, so that is the likely answer for a theme with no idiom yet — but read the
+  theme, don't copy the number.)
+- **Unlayered, no `!important`, editor entry only** — the same three properties that
+  make the font rule work, for the same reasons.
 
 ### The canvas is not always an iframe
 
