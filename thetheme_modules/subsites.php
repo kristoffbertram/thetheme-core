@@ -157,6 +157,9 @@ add_action('wp_enqueue_scripts', 'thetheme_enqueue_subsite_assets', 20);
 /**
  * Resolve the editor.css (relative) for the post being edited, using the subsite's
  * section / template / admin_conditions. Falls back to the www default.
+ *
+ * All three matches need a post id, so on a brand-new post there is nothing to match
+ * against — hence the single-subsite short-circuit below.
  */
 function thetheme_resolve_editor_css_rel(): string {
     $subsites = thetheme_get_registered_subsites();
@@ -207,6 +210,14 @@ function thetheme_resolve_editor_css_rel(): string {
         }
     }
 
+    // 4) Exactly one registered subsite: there is nothing to disambiguate, so it is the
+    // answer whether or not a post id exists. Without this, a NEW post — no id, so none
+    // of the three matches above can run — falls through to the default and the site's
+    // only editor stylesheet never loads.
+    if (!$resolved && count($subsites) === 1) {
+        $resolved = array_key_first($subsites);
+    }
+
     if ($resolved && !empty($subsites[$resolved]['editor'])) {
         return ltrim($subsites[$resolved]['editor'], '/');
     }
@@ -235,6 +246,12 @@ function thetheme_enqueue_subsite_editor_styles(): void {
     $rel  = thetheme_resolve_editor_css_rel();
     $path = get_stylesheet_directory() . '/' . $rel;
     if (!file_exists($path)) {
+        // Nothing to enqueue means the canvas gets no theme CSS at all. Say so under
+        // WP_DEBUG rather than leaving it a silent no-op — the symptom (an unstyled
+        // editor) reads as a CSS problem, not a missing file.
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("[thetheme] Editor stylesheet not found, canvas left unstyled: {$rel}");
+        }
         return;
     }
 

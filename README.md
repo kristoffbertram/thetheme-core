@@ -102,6 +102,9 @@ them to WordPress. Every one has the same three-step precedence:
 2. **A filter**, when no subsite declared it.
 3. **The literal default**, when nothing is filtered.
 
+The editor path has one extra rule at step 1, and it exists because that path resolves
+its subsite differently — see *One registered subsite is always the answer*, below.
+
 | Asset | Subsite key | Filter | Default |
 |---|---|---|---|
 | Front-end stylesheet | `style` | `thetheme_default_stylesheet` | `assets/css/www/app.css` |
@@ -132,6 +135,32 @@ before them, declared assets or not. The editor fallback is reached when no subs
 resolves *or* the resolved one declares no `editor`. A project that declares `style`,
 `script` and `editor` on every subsite never touches them and does not need the
 filters.
+
+### One registered subsite is always the answer
+
+The front end resolves its subsite from the request. The editor cannot: it matches on
+`section`, `template`/`templates` and `admin_conditions`, and **all three need a post
+id**. On a brand-new post there is no id yet, so none of them can run.
+
+That is fine when several subsites are registered — with nothing to match on there is
+genuinely no answer, and the filtered default is the honest one. It is wrong when
+**exactly one** subsite is registered: there is nothing to disambiguate, so its `editor`
+entry is the only possible answer, post id or not. `thetheme_resolve_editor_css_rel()`
+therefore short-circuits to that single subsite when the three matches produce nothing,
+and a new post opens with the same canvas CSS an existing one gets.
+
+Two consequences worth knowing:
+
+- **Multi-subsite projects are untouched.** The short-circuit is guarded on a count of
+  exactly one, so a project registering two or more behaves exactly as before, on new
+  posts and existing ones alike.
+- **`thetheme_default_editor_stylesheet` still tells the truth.** If that single subsite
+  declares an `editor`, the filter is never reached. If it declares none, the filter runs
+  and its second argument is that subsite's id — not `null`, because a subsite *did*
+  resolve.
+
+`add_editor_style()` from the project remains a valid alternative route: it covers every
+editor screen including new posts, and does not depend on subsite resolution at all.
 
 **The login screen has no subsite route, on purpose.** `wp-login.php` has no queried
 page, and the section and template branches of `thetheme_resolve_current_subsite_id()`
@@ -311,15 +340,25 @@ iframed, so keep editor rules scoped to `.editor-styles-wrapper` rather than bar
 element selectors; and never reason about the canvas from the iframe assumption — open
 DevTools and check.
 
-### A missing editor stylesheet fails silently
+### A missing editor stylesheet leaves the canvas unstyled
 
 `thetheme_resolve_editor_css_rel()` returns the resolved subsite's declared `editor`
 path, falling back to the filtered default (see *Where asset paths come from*, above —
 `assets/css/www/editor.css` unless a theme redirects it). If the resolved file does not exist,
 `thetheme_enqueue_subsite_editor_styles()` simply `return`s — the canvas gets **no theme
-CSS whatsoever**, with no notice and no log line. The front-end path has an
-unconditional fallback; this one has none. A subsite that declares an `editor` entry
-must have an SCSS source that actually builds it.
+CSS whatsoever**. The front-end path has an unconditional fallback; this one has none. A
+subsite that declares an `editor` entry must have an SCSS source that actually builds it.
+
+The `return` stays — enqueuing a 404 would help nobody — but it is no longer silent.
+Under `WP_DEBUG` it writes one line naming the path it looked for:
+
+```
+[thetheme] Editor stylesheet not found, canvas left unstyled: assets/css/shop/editor.css
+```
+
+That is the whole signal, and it is deliberately debug-only: an unstyled canvas reads as
+a CSS problem and sends people into DevTools, when the actual fault is a path that was
+never built. With `WP_DEBUG` off, production stays quiet.
 
 ## Resilient loading (boot mu-plugin)
 
