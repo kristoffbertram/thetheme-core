@@ -92,7 +92,7 @@ thetheme_templates/        Full page templates (selectable by slug)
 
 ## Core blocks arrive unstyled — the project supplies the CSS
 
-`thetheme_modules/editing.php:5-13` disables both per-block asset strategies
+`thetheme_modules/editing.php` disables both per-block asset strategies
 (`should_load_block_assets_on_demand`, `should_load_separate_core_block_assets`)
 and then dequeues **and deregisters** `wp-block-library`, plus dequeues
 `classic-theme-styles` and `global-styles`. This is deliberate: the engine assumes
@@ -107,6 +107,45 @@ filters consolidate everything into the one handle that then gets deregistered.
 And because the dequeue runs on `wp_enqueue_scripts` (front end only) while the
 filters apply everywhere, a core block still looks right in the editor and breaks
 on the front end.
+
+### Switching the reset off — a conversion runway
+
+A theme being ported onto this package has not written that parity CSS yet, and
+until it has, booting the engine is a total visual collapse — every `has-*-color`
+/ `has-*-font-size` class in existing post content, and the `--wp--preset--*`
+variables a theme's own stylesheet overrides, are defined by the very handles the
+reset removes. So the whole reset is gated:
+
+```php
+// thetheme_functions/app/wp-block-styles.php, or functions.php, or an mu-plugin
+add_filter('thetheme_reset_core_block_styles', '__return_false');
+```
+
+The default is `true` — an existing consumer that does nothing keeps the reset,
+byte for byte. When it returns false **nothing is hooked at all**: neither
+`should_load_*` filter is registered and neither is the dequeue, so WordPress's
+own defaults apply untouched. That matters more than it sounds — it is what
+brings back per-block assets and a `classic-theme-styles` that WordPress
+registers on every request but does not always enqueue, which re-enqueueing by
+handle would wrongly switch on.
+
+**Register the filter no later than `after_setup_theme` priority 0.** The gate is
+read once, on `after_setup_theme` priority 1 — after the app layer loads
+(`thetheme_load_app()` runs at priority 0) and before anything applies the two
+`should_load_*` filters, which first happens on `init`. A filter added on `init`
+is too late.
+
+Both callbacks are named, so a consumer that misses the filter can still unhook
+them:
+
+```php
+remove_action('after_setup_theme', 'thetheme_register_core_block_style_reset', 1);
+remove_action('wp_enqueue_scripts', 'thetheme_dequeue_core_block_styles', 100);
+```
+
+This is a **conversion runway, not a permanent setting**. A theme sitting on the
+opt-out is shipping WordPress's block CSS *and* Tailwind, which is the fight the
+reset exists to end. Write `_wp.scss` (below), then delete the filter.
 
 ### The allowlist is a project file, on purpose
 

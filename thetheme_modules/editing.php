@@ -1,16 +1,32 @@
 <?php
 /**
  * WP Block Resetting
+ *
+ * On by default: the engine assumes the theme owns its core-block CSS. A theme that
+ * does not yet — a conversion in progress — switches the whole reset off with
+ * add_filter('thetheme_reset_core_block_styles', '__return_false'), registered no
+ * later than 'after_setup_theme' priority 0. Nothing is hooked when it returns false.
  */
-add_filter('should_load_block_assets_on_demand', '__return_false', 1);
-add_filter('should_load_separate_core_block_assets', '__return_false', 1);
-
-add_action('wp_enqueue_scripts', function () {
+function thetheme_dequeue_core_block_styles(): void {
     wp_dequeue_style('wp-block-library');
     wp_deregister_style('wp-block-library');
     wp_dequeue_style('classic-theme-styles');
     wp_dequeue_style('global-styles');
-}, 100);
+}
+
+function thetheme_register_core_block_style_reset(): void {
+    if (!apply_filters('thetheme_reset_core_block_styles', true)) {
+        return;
+    }
+
+    add_filter('should_load_block_assets_on_demand', '__return_false', 1);
+    add_filter('should_load_separate_core_block_assets', '__return_false', 1);
+    add_action('wp_enqueue_scripts', 'thetheme_dequeue_core_block_styles', 100);
+}
+
+// Late enough that the app layer ('after_setup_theme' 0) can have set the filter,
+// early enough that nothing has applied the two should_load_* filters yet (init).
+add_action('after_setup_theme', 'thetheme_register_core_block_style_reset', 1);
 
 /**
  * Images
