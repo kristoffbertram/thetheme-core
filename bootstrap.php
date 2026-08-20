@@ -8,7 +8,7 @@
  *     require_once __DIR__ . '/vendor/autoload.php';
  *
  * in its functions.php, after which all core modules are loaded. The theme then
- * loads its own app layer (thetheme_functions/, thetheme_app/) separately.
+ * loads its own app layer (thetheme_functions/) separately.
  *
  * Loads every PHP file in thetheme_modules/ in filename order. Modules are
  * project-agnostic; per-project data is injected via filters (see the carve-out
@@ -29,9 +29,14 @@ if (!function_exists('thetheme_core_boot')) {
 
 if (!function_exists('thetheme_load_app')) {
     /**
-     * Load a theme's app layer (thetheme_functions/, thetheme_app/) recursively.
+     * Load a theme's app layer (thetheme_functions/) recursively.
      * Called by the boot mu-plugin so loader code never lives in functions.php
      * (where it could be edited out). See mu-plugin/thetheme-boot.php.
+     *
+     * The loop below deliberately still walks the retired top-level thetheme_app/,
+     * so a theme that has not yet moved its files into thetheme_functions/app/ does
+     * not silently lose its app layer. Leave that second entry in place until no
+     * theme uses the directory; removing it is a separate, breaking change.
      */
     function thetheme_load_app(string $theme_dir): void {
         foreach (['/thetheme_functions/', '/thetheme_app/'] as $rel) {

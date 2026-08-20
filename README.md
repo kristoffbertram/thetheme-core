@@ -44,8 +44,8 @@ list, the project injects it via a filter; core ships only the default:
 
 | Core file | Project data removed | Injected via |
 |---|---|---|
-| `subsites.php` | the registered-subsites array | a **registration call**, not a filter: the project calls `thetheme_register_subsites([...])` from `thetheme_app/subsites.config.php`; core ships an empty registry and `thetheme_get_registered_subsites()` reads it back |
-| `acf-loader.php` | the `$legacy` block array | `apply_filters('thetheme_acf_legacy_blocks', [])` — project returns its list from `thetheme_app/acf-legacy.php` |
+| `subsites.php` | the registered-subsites array | a **registration call**, not a filter: the project calls `thetheme_register_subsites([...])` from `thetheme_functions/app/subsites.config.php`; core ships an empty registry and `thetheme_get_registered_subsites()` reads it back |
+| `acf-loader.php` | the `$legacy` block array | `apply_filters('thetheme_acf_legacy_blocks', [])` — project returns its list from `thetheme_functions/app/acf-legacy.php` |
 
 After this, every core file is identical across deployments and `composer update`
 is a safe, mechanical sync.
@@ -58,11 +58,10 @@ where code lives from its responsibility alone.
 ```
 thetheme_functions/        Behavioural code, purpose-split:
   app/                     App wiring (menus, sections, templates, breadcrumb, …)
+    subsites.config.php    returns the registered-subsites array
+    acf-legacy.php         returns the project legacy-block list
   blocks/                  Block registration glue / shared block helpers
   post-types/              CPT + taxonomy registration
-thetheme_app/              Project config the engine reads:
-  subsites.config.php      returns the registered-subsites array
-  acf-legacy.php           returns the project legacy-block list
 thetheme_components/       Reusable partials — card.php link-neutralisation pattern
 thetheme_blocks/<name>/    Self-contained block — four files (+ co-located
                            block.scss / block.js / view.php):
@@ -443,8 +442,7 @@ must-use plugin instead:
 
 - `mu-plugin/thetheme-boot.php` boots core on `setup_theme` (so core helpers are
   available in `functions.php`) and loads the active theme's app layer
-  (`thetheme_functions/`, `thetheme_app/`) on `after_setup_theme` via
-  `thetheme_load_app()`.
+  (`thetheme_functions/`) on `after_setup_theme` via `thetheme_load_app()`.
 - `src/Installer.php` copies that stub into `wp-content/mu-plugins/` automatically
   during `composer install/update` — no manual placement.
 

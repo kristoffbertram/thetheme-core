@@ -57,7 +57,7 @@ add_action('init', function () {
 
     // --- Safety net: if legacy names are referenced in content but not registered, add minimal fallbacks.
     // The list is project content data, so core ships none. Each project supplies its own
-    // legacy block names via the 'thetheme_acf_legacy_blocks' filter (thetheme_app/acf-legacy.php):
+    // legacy block names via the 'thetheme_acf_legacy_blocks' filter (thetheme_functions/app/acf-legacy.php):
     // e.g. the reference theme ['acf/styled-button','acf/assettable']; a consuming project adds 'acf/carouselitem'.
     $legacy = apply_filters('thetheme_acf_legacy_blocks', []);
     foreach ( $legacy as $name ) {
