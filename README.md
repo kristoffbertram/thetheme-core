@@ -267,6 +267,13 @@ entry beside the `@theme` block that names them, not in `_wp.scss`: the partial 
 for block *structure*, these are *tokens*. Watch the sanitised slug — a `2xl` font
 size becomes `has-2-xl-font-size`, with the hyphen.
 
+That read strips CSS comments before it looks for the block, and takes the **last**
+`@theme` block in the file. So a docblock explaining the mechanism may write the
+at-rule name followed by a brace without becoming the match, and a stale or example
+block earlier in the file doesn't shadow the real one. Under `WP_DEBUG`, a stylesheet
+that exists but yields no palette is logged rather than returning silently — the
+silence is what makes a missing palette read as a Gutenberg problem.
+
 ## The editor canvas is a second, hostile environment
 
 `subsites.php` enqueues the resolved editor stylesheet as a native `<link>` on

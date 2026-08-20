@@ -69,19 +69,31 @@ add_action('after_setup_theme', function () {
 
     $scss = file_get_contents($path);
 
-    // Extract the @theme block
-    if (!preg_match('/@theme\s*{([^}]+)}/s', $scss, $match)) {
-        // error_log("@theme block not found in $path");
+    // Strip comments before matching. The natural way to document this mechanism is to
+    // write the at-rule name followed by an opening brace, and an unstripped docblock
+    // that does so is matched as the block itself — yielding an empty (or, if the
+    // comment carries an example, a wrong) palette with no error.
+    $scss = preg_replace('#/\*.*?\*/#s', '', $scss);      // /* ... */
+    $scss = preg_replace('#(^|\s)//.*$#m', '$1', $scss);   // // ...  (leaves https:// alone)
+
+    // Extract the @theme block. The LAST one wins, mirroring the CSS cascade: a stale
+    // or example block earlier in the file must not shadow the real one below it.
+    if (!preg_match_all('/@theme\s*{([^}]+)}/s', $scss, $match)) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("@theme block not found in $path");
+        }
         return;
     }
 
-    $theme_block = $match[1];
+    $theme_block = end($match[1]);
 
     // Match only color vars with hex values
     preg_match_all('/--color-([\w\-]+):\s*(#[0-9a-fA-F]{3,8})\s*;/', $theme_block, $matches, PREG_SET_ORDER);
 
     if (empty($matches)) {
-        // error_log("No color variables found in @theme block");
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("No color variables found in the @theme block in $path");
+        }
         return;
     }
 
