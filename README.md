@@ -17,12 +17,14 @@ unchanged. From the reference theme (`the reference theme`) that is the
 ```
 thetheme_modules/
 ├── acf-loader.php     ACF block/field registration engine (+ legacy carve-out, see below)
-├── defaults.php       Generic theme defaults / supports
-├── developing.php     Dev-only helpers
-├── editing.php        Block-editor tweaks: core block CSS, font sizes, colour palette
-├── images.php         Generic image sizes / handling
+├── body-classes.php   Slug/section/category classes on <body>, and the admin template class
+├── debug.php          dump() — debug output, ships unused
+├── defaults.php       WordPress defaults the package adjusts (html5, emoji, excerpts, embeds)
+├── editor.php         Block-editor tweaks: core block CSS, font sizes, colour palette
+├── images.php         thetheme_image() + the opt-in default-size stripper
+├── security.php       Head cleanup, xmlrpc, user-enumeration blocking, response headers
 ├── subsites.php       Subsite resolver + editor-canvas stylesheet enqueue
-├── wp-admin.php       Admin shell tweaks
+├── templating.php     fgc() — inline a theme file (used by live markup)
 └── wp-login.php       Login screen tweaks
 ```
 
@@ -169,7 +171,7 @@ the path that had none before.
 
 ## Core blocks arrive unstyled — the project supplies the CSS
 
-`thetheme_modules/editing.php` disables both per-block asset strategies
+`thetheme_modules/editor.php` disables both per-block asset strategies
 (`should_load_block_assets_on_demand`, `should_load_separate_core_block_assets`)
 and then dequeues **and deregisters** `wp-block-library`, plus dequeues
 `classic-theme-styles` and `global-styles`. This is deliberate: the engine assumes
@@ -257,7 +259,7 @@ plus the visually-hidden label. **It grows with the allowlist**: one rule per al
 core block that needs one. A short `_wp.scss` — or none at all — is not drift; it
 means that project allows few core blocks, or only ones that need no layout.
 
-Token classes are the same story with a different home. `editing.php` derives the
+Token classes are the same story with a different home. `editor.php` derives the
 editor palette from `@theme { --color-*: … }` in the theme's SCSS entry and registers
 a font-size scale, so the editor writes `has-<slug>-color`,
 `has-<slug>-background-color` and `has-<slug>-font-size` classes into content — but
@@ -340,7 +342,7 @@ the theme wrote is being ignored.
 Two causes produce it, and **either one alone is enough**, which is why diagnosing
 from the first is a trap:
 
-- **The one-sided reset.** `thetheme_modules/editing.php` hooks its dequeue on
+- **The one-sided reset.** `thetheme_modules/editor.php` hooks its dequeue on
   `wp_enqueue_scripts` — **front end only**. The editor therefore keeps
   `global-styles` and WordPress's layout CSS while the front end loses them. With no
   `theme.json` (the convention here keeps that file disable-only — switch core
