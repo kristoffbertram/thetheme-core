@@ -39,6 +39,7 @@ add_theme_support('post-thumbnails');
 add_theme_support('disable-custom-font-sizes');
 
 add_theme_support('editor-font-sizes', [
+    ['name' => '3xs', 'slug' => '3xs', 'size' => '0.5rem'],
     ['name' => '2xs', 'slug' => '2xs', 'size' => '0.625rem'],
     ['name' => 'xs',  'slug' => 'xs',  'size' => '0.75rem'],
     ['name' => 'sm',  'slug' => 'sm',  'size' => '0.875rem'],
@@ -110,3 +111,12 @@ add_action('after_setup_theme', function () {
     add_theme_support('editor-color-palette', $colors);
     add_theme_support('disable-custom-colors');
 });
+/**
+ * No custom gradient picker.
+ *
+ * Sits here beside disable-custom-colors and disable-custom-font-sizes because it is
+ * the same decision: the theme owns its palette, and a free-form picker writes values
+ * into content that the stylesheet cannot style. Three themes declared this
+ * separately before it moved here (2026-09-02).
+ */
+add_theme_support('disable-custom-gradients');
