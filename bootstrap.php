@@ -33,24 +33,23 @@ if (!function_exists('thetheme_load_app')) {
      * Called by the boot mu-plugin so loader code never lives in functions.php
      * (where it could be edited out). See mu-plugin/thetheme-boot.php.
      *
-     * The loop below deliberately still walks the retired top-level thetheme_app/,
-     * so a theme that has not yet moved its files into thetheme_functions/app/ does
-     * not silently lose its app layer. Leave that second entry in place until no
-     * theme uses the directory; removing it is a separate, breaking change.
+     * There is ONE app-layer directory: thetheme_functions/. A top-level
+     * thetheme_app/ was also walked here until 2026-09-02, as a migration
+     * back-compat for themes that had not yet moved their files. No theme uses
+     * that directory any more, so the second pass is gone. A theme that still has
+     * one must move its contents to thetheme_functions/app/ — they will not load.
      */
     function thetheme_load_app(string $theme_dir): void {
-        foreach (['/thetheme_functions/', '/thetheme_app/'] as $rel) {
-            $dir = rtrim($theme_dir, '/') . $rel;
-            if (!is_dir($dir)) {
-                continue;
-            }
-            $it = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
-            );
-            foreach ($it as $file) {
-                if ($file->isFile() && $file->getExtension() === 'php') {
-                    require_once $file->getPathname();
-                }
+        $dir = rtrim($theme_dir, '/') . '/thetheme_functions/';
+        if (!is_dir($dir)) {
+            return;
+        }
+        $it = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+        foreach ($it as $file) {
+            if ($file->isFile() && $file->getExtension() === 'php') {
+                require_once $file->getPathname();
             }
         }
     }
