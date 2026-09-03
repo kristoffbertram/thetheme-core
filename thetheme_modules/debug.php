@@ -1,25 +1,11 @@
 <?php
-if ( ! function_exists( 'fgc' ) ) {
-
-    function fgc($fgc , $echo = true)
-    {
-        // Path-traversal guard: only read files that resolve inside the theme dir.
-        $theme_dir = realpath(get_stylesheet_directory());
-        $resolved  = realpath($theme_dir . $fgc);
-
-        if (!$theme_dir || !$resolved) return;
-        if (strpos($resolved, $theme_dir . DIRECTORY_SEPARATOR) !== 0) return;
-
-        $contents = file_get_contents($resolved);
-
-        if (!$echo) {
-            return $contents;
-        }
-
-        echo $contents;
-    }
-
-}
+/**
+ * Debug output. Not called by anything that ships.
+ *
+ * Split out of developing.php on 2026-09-02, away from fgc(), which templates depend
+ * on. Nothing in the estate calls dump() — that is the point of it: it exists to be
+ * reached for while working, and to be obvious in a diff if it is ever left behind.
+ */
 
 if (!function_exists('dump')) {
 
