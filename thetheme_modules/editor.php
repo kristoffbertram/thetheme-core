@@ -120,3 +120,89 @@ add_action('after_setup_theme', function () {
  * separately before it moved here (2026-09-02).
  */
 add_theme_support('disable-custom-gradients');
+
+/**
+ * No default gradient presets.
+ *
+ * Declared EMPTY rather than as a theme palette, and the emptiness is the mechanism:
+ * for a classic theme WP_Theme_JSON_Resolver::get_theme_data() sets
+ * settings.color.defaultGradients to false as soon as 'editor-gradient-presets' is
+ * present at all (the !wp_theme_has_theme_json() branch in
+ * wp-includes/class-wp-theme-json-resolver.php). There is no separate "disable"
+ * support to call, so declaring an empty set is how core's six defaults go away.
+ *
+ * Empty rather than a set of our own for the same reason as the line above: the
+ * stylesheet owns what a block may look like, and a preset offered in the picker is a
+ * value written into content that the stylesheet then has to style. Nothing on this
+ * estate has ever used one.
+ *
+ * An empty array survives the round trip — get_classic_theme_supports_block_editor_settings()
+ * tests `false !== $gradient_presets`, not truthiness — so this is not silently a no-op.
+ */
+add_theme_support('editor-gradient-presets', []);
+
+/**
+ * Spacing scale.
+ *
+ * Declaring it is what switches core's own scale off: same branch as the gradients
+ * above sets settings.spacing.defaultSpacingSizes to false the moment
+ * 'editor-spacing-sizes' is present. Again there is no separate "disable" support.
+ *
+ * The slugs are numeric and are WordPress's own on purpose. Published content stores
+ * the reference, not the value — `var:preset|spacing|50` in a block's attributes — and
+ * consuming stylesheets define `--wp--preset--spacing--50`. A prettier slug would
+ * orphan both, silently, on content already written.
+ *
+ * The values are the estate's rather than an invention: they are the ramp that the two
+ * themes which declare spacing at all arrived at independently, read at their widest
+ * breakpoint. The narrower steps below 50 come from one of the two; the rest agree
+ * exactly. A theme that wants a different scale declares 'editor-spacing-sizes' itself
+ * — theme code runs after this module, and the later declaration replaces this one.
+ *
+ * These sizes are also only a fallback in practice. Core emits them as
+ * --wp--preset--spacing--* through global-styles, which the reset above dequeues on the
+ * front end, so on a finished site the theme's own stylesheet is what defines them.
+ */
+add_theme_support('editor-spacing-sizes', [
+    ['name' => '2X-Small', 'slug' => '20', 'size' => '0.25rem'],
+    ['name' => 'X-Small',  'slug' => '30', 'size' => '0.5rem'],
+    ['name' => 'Small',    'slug' => '40', 'size' => '1rem'],
+    ['name' => 'Medium',   'slug' => '50', 'size' => '2rem'],
+    ['name' => 'Large',    'slug' => '60', 'size' => '4rem'],
+    ['name' => 'X-Large',  'slug' => '70', 'size' => '6rem'],
+    ['name' => '2X-Large', 'slug' => '80', 'size' => '8rem'],
+    ['name' => '3X-Large', 'slug' => '90', 'size' => '12rem'],
+]);
+
+/**
+ * No drop cap.
+ *
+ * The odd one out: WordPress gives a classic theme no add_theme_support() for this.
+ * Core's own wp-includes/theme.json sets typography.dropCap true and nothing in the
+ * theme-support bridge touches it, so the only non-theme.json route is to edit the
+ * settings tree on its way to the editor.
+ *
+ * That route is real and was read, not assumed, on the WordPress the estate runs
+ * (6.9.x–7.1): wp-includes/js/dist/block-library.js's DropCapControl returns null when
+ * useSettings('typography.dropCap') is falsy, and useSettings resolves a path against
+ * settings.__experimentalFeatures — falling back to true only when the path is
+ * undefined. Setting it explicitly false is therefore what removes the control, and
+ * this filter is the last thing to touch that array before it is handed to the editor.
+ *
+ * Note the deliberate absence of a filter of our own: per TODO.md D2 a module gets one
+ * opt-out, and editor.php's is `thetheme_reset_core_block_styles`. A theme that wants
+ * the drop cap back removes this callback.
+ */
+if (!function_exists('thetheme_disable_drop_cap')) {
+    function thetheme_disable_drop_cap($settings) {
+        if (!is_array($settings) || !isset($settings['__experimentalFeatures'])) {
+            return $settings;
+        }
+
+        $settings['__experimentalFeatures']['typography']['dropCap'] = false;
+
+        return $settings;
+    }
+}
+
+add_filter('block_editor_settings_all', 'thetheme_disable_drop_cap');

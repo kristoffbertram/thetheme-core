@@ -65,7 +65,7 @@ are listed so the filter names are settled before the first one lands.
 | `defaults.php` | **shipped 2026-09-02** | `thetheme_html5_markup`, `thetheme_responsive_embeds`, `thetheme_page_excerpts`, `thetheme_excerpt_more_text`, `thetheme_remove_emoji_support`, `thetheme_remove_wp_embed` | `true` / `''` |
 | `templating.php` | shipped | — | — |
 | `debug.php` | shipped | — | — |
-| `editor.php` | shipped + extend | `thetheme_reset_core_block_styles`, `thetheme_allowed_core_blocks`, `thetheme_allowed_plugin_blocks`; also owns `disable-custom-gradients` *(2026-09-02)* | `true`, `[]`, `[]` |
+| `editor.php` | shipped + extend | `thetheme_reset_core_block_styles`, `thetheme_allowed_core_blocks`, `thetheme_allowed_plugin_blocks`; also owns `disable-custom-gradients`, an empty `editor-gradient-presets`, `editor-spacing-sizes` and the drop-cap filter *(2026-09-02, extended 2026-09-04)* | `true`, `[]`, `[]` |
 | `images.php` | shipped | `thetheme_removed_default_image_sizes` *(landed 2026-09-02)* | `[]` = off |
 | `media.php` | planned | `thetheme_custom_mime_types` | `[]` |
 | `security.php` | **shipped 2026-09-02** | `thetheme_remove_feed_links`, `thetheme_hide_admin_bar`, `thetheme_login_error_message`, `thetheme_redirect_author_archives`, `thetheme_disallow_file_edit`, `thetheme_rest_requires_auth`, `thetheme_security_headers` | `true`×5, **`false`**, header map |
