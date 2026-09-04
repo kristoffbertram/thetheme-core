@@ -38,6 +38,17 @@ if (!function_exists('thetheme_load_app')) {
      * back-compat for themes that had not yet moved their files. No theme uses
      * that directory any more, so the second pass is gone. A theme that still has
      * one must move its contents to thetheme_functions/app/ — they will not load.
+     *
+     * ORDER GUARANTEE: files load in ascending sorted order of their path
+     * relative to thetheme_functions/ (byte-wise string comparison, so
+     * subdirectories sort among the files beside them — app/menus.php before
+     * layout/x.php before shortcodes/y.php). This is a contract a theme may rely
+     * on: it is what makes a file-scope call to a function defined in a sibling
+     * file work as long as the definition sorts first. The walk was unsorted
+     * until 2026-09-04 and yielded raw filesystem order, which white-screened
+     * five consumers whose app/theme-setup.php ran before app/sitepage.php.
+     * Relying on the order is still the fragile half — prefer hook registrations
+     * over file-scope work in the app layer — but the order is now defined.
      */
     function thetheme_load_app(string $theme_dir): void {
         $dir = rtrim($theme_dir, '/') . '/thetheme_functions/';
@@ -47,10 +58,17 @@ if (!function_exists('thetheme_load_app')) {
         $it = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
         );
+        $files = [];
         foreach ($it as $file) {
             if ($file->isFile() && $file->getExtension() === 'php') {
-                require_once $file->getPathname();
+                $files[] = $file->getPathname();
             }
+        }
+        // The iterator yields filesystem order, which differs per machine and per
+        // deploy. Sort so the load order is the same everywhere.
+        sort($files, SORT_STRING);
+        foreach ($files as $file) {
+            require_once $file;
         }
     }
 }
