@@ -137,25 +137,13 @@ add_action('wp_footer', 'thetheme_remove_wp_embed');
  * package states its position explicitly. So: the wrapper goes, and the layout classes
  * stay on the group element itself.
  *
- * `thetheme_restore_group_inner_container` is a CONVERSION RUNWAY, not a setting —
- * the same shape as `thetheme_reset_core_block_styles` (see README.md § *Switching
- * the reset off*). A theme whose stylesheet still reaches through
- * `> .wp-block-group__inner-container >` can return true while it rewrites those
- * selectors, and then delete the filter. Markup that depends on when a site was
- * converted is the drift this package exists to remove: a site sitting on `true` is
- * mid-revert, not configured.
+ * Unconditional, and deliberately so — no filter, no per-site opt-out. A theme whose
+ * selectors reach through `> .wp-block-group__inner-container >` rewrites them before
+ * it takes this version of the package; that coordination happens at rollout, not
+ * inside the package. A package that hedges its own decision is not a convention.
  *
- * Register it no later than `after_setup_theme` priority 0 — the gate is read on
- * `init`, after the app layer loads.
+ * File scope, not a hook: core requires `block-supports/layout.php` at
+ * `wp-settings.php:417` and this module is loaded from `setup_theme` (`:697`), so the
+ * registration has always happened by the time this line runs.
  */
-if (!function_exists('thetheme_remove_group_inner_container')) {
-    function thetheme_remove_group_inner_container() {
-
-        if (apply_filters('thetheme_restore_group_inner_container', false)) {
-            return;
-        }
-
-        remove_filter('render_block_core/group', 'wp_restore_group_inner_container', 10);
-    }
-}
-add_action('init', 'thetheme_remove_group_inner_container');
+remove_filter('render_block_core/group', 'wp_restore_group_inner_container', 10);

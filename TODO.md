@@ -238,8 +238,8 @@ Everything past `v1.3.0`, which is now substantial:
 
 All additive or opt-in except the two removals and the group unhook (D11), so:
 **minor**. The group unhook is the one item in this release that changes rendered
-markup on every consumer, and four themes need the runway filter or a selector rewrite
-before they take it — see D11.
+markup on every consumer, and it is unconditional — four themes need their selectors
+rewritten before they take this version. See D11.
 
 THE SITES DO NOT HAVE ANY OF THIS YET. Every consuming theme runs a vendored snapshot;
 the app layers have already been stripped of the code these modules replace, so the
@@ -250,11 +250,11 @@ Tagging and pushing this repo is done by hand, never by an agent.
 
 ---
 
-## D11 — The package removes core's group inner-container, and the switch is a runway
+## D11 — The package removes core's group inner-container, unconditionally
 
 `thetheme_modules/defaults.php` unhooks `wp_restore_group_inner_container` from
-`render_block_core/group` on `init`, gated by
-`apply_filters('thetheme_restore_group_inner_container', false)`.
+`render_block_core/group` with a bare file-scope `remove_filter()`. No gate, no filter,
+no per-site opt-out.
 
 **Why it is the package's call and not each site's.** Core's function bails on
 `wp_theme_has_theme_json()`. The convention deletes `theme.json` from every site this
@@ -270,14 +270,17 @@ implicit core behaviour this package exists to take control of. Where core decid
 output from the presence of a file rather than from a declaration, the package states
 its position. That reasoning outlives this particular fix.
 
-**Why the filter defaults to `false` and is documented as a runway, not a setting.**
-Four themes were ported while the injection was live and adapted to it, with selectors
-that reach through `> .wp-block-group__inner-container >`. They can return `true` while
-they rewrite. But markup that depends on *when* a site was converted is the drift this
-package exists to remove, so the switch is documented in the same words as
-`thetheme_reset_core_block_styles`: a theme sitting on `true` is mid-revert, not
-configured. The alternative — leaving the injection in place and having each site adapt
-— was considered and rejected for that reason.
+**Why there is no opt-back-in filter.** An earlier shape of this gated the removal on
+`apply_filters('thetheme_restore_group_inner_container', false)`, as a conversion runway
+for the four themes that were ported while the injection was live and adapted to it.
+That is struck. Each consumer carries its own vendored copy of this package, so the
+package moves independently and reaches a site only when that site is updated: the four
+themes rewrite their selectors and then pull, and a site is checked at rollout before it
+is released. A gate inside the package is a second mechanism for an outcome the rollout
+already covers — the exact drift deleting `theme.json` removed — and a package that
+hedges its own decision is not a convention. The other alternative, leaving the
+injection in place and having each site adapt to it, was considered and rejected because
+markup that depends on *when* a site was converted is what this package exists to end.
 
 **Two traps for the revert.** Selector counts taken from built CSS are the same source
 chain fanned out by the compiler, not separate work, and built files are never
@@ -286,8 +289,14 @@ PHP templates; `remove_filter()` does not touch those, so a find-and-replace acr
 theme's stylesheets breaks the regions its templates still emit. Per-site, against
 rendered output.
 
+**Why file scope and not a hook.** Core requires `block-supports/layout.php` at
+`wp-settings.php:417`; the boot mu-plugin loads this package on `setup_theme` (`:697`),
+so the registration has always happened by the time the module is read. Nothing has to
+be waited for.
+
 **Verified by execution, not by reading the diff.** One consumer's front page rendered
-through its own `wp-load.php` both ways: 26 occurrences of
+through its own `wp-load.php` both ways: 6 occurrences of
 `wp-block-group__inner-container` before, 0 after, with `is-layout-constrained` /
-`wp-block-group-is-layout-constrained` counts unchanged and now sitting on the outer
-`.wp-block-group` element.
+`wp-block-group-is-layout-constrained` counts unchanged (10 / 5) and now sitting on the
+outer `.wp-block-group` element. Measured again on the unconditional shape; an earlier
+consumer read 26 / 0 on the guarded one.

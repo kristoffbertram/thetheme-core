@@ -310,7 +310,8 @@ unstyled, and 25 rules were dead before anyone looked at the markup.
 A bare `file_exists()` on `theme.json` changing rendered markup estate-wide is exactly
 the class of implicit core behaviour this package exists to take control of. Where core
 decides output from the presence of a file rather than from a declaration, the package
-states its position explicitly. So `thetheme_modules/defaults.php` unhooks it on `init`:
+states its position explicitly. So `thetheme_modules/defaults.php` unhooks it, at file
+scope, beside the emoji removals:
 
 ```php
 remove_filter('render_block_core/group', 'wp_restore_group_inner_container', 10);
@@ -320,33 +321,20 @@ The wrapper goes and the layout classes stay on the group element itself — the
 does not cost you `is-layout-constrained` / `wp-block-group-is-layout-constrained`,
 which is the failure mode to check for if you ever reproduce this by hand.
 
-### Putting the div back — a conversion runway
+**Unconditional, and there is no filter to put the div back.** A theme ported *while*
+the injection was live may have adapted to it, with selectors that reach through
+`> .wp-block-group__inner-container >`; removing the wrapper strands those. It rewrites
+them before it takes this version of the package — that coordination happens at rollout,
+where a site is checked before it is released, not through a per-site opt-out inside the
+package. Two mechanisms for one outcome is the drift deleting `theme.json` removed in the
+first place, and a package that hedges its own decision is not a convention.
 
-A theme that was ported *while* the filter was active may have adapted to it, with
-selectors that reach through `> .wp-block-group__inner-container >`. Removing the
-wrapper strands those. It can put the div back while it rewrites them:
-
-```php
-// thetheme_functions/app/wp-block-styles.php, or functions.php, or an mu-plugin
-add_filter('thetheme_restore_group_inner_container', '__return_true');
-```
-
-The default is `false` — do nothing and core's wrapper is gone. Register the filter no
-later than `after_setup_theme` priority 0; the gate is read on `init`, after the app
-layer loads. The callback is named, so a consumer can also unhook it outright:
-
-```php
-remove_action('init', 'thetheme_remove_group_inner_container');
-```
-
-This is a **conversion runway, not a per-site setting**, in exactly the sense of
-`thetheme_reset_core_block_styles` above. Markup that depends on *when* a site was
-converted is the drift this package exists to remove, so a theme sitting on `true` is
-mid-revert, not configured: rewrite the selectors, then delete the filter. Note also
-that some themes hand-write `wp-block-group__inner-container` in their own PHP
-templates — `remove_filter()` does not touch those, so a find-and-replace across a
-theme's CSS will break the regions its templates still emit. Read the rendered output
-per site; do not sweep.
+Two traps if you do have to rewrite selectors. Counts taken from *built* CSS are one
+source chain fanned out by the compiler, not separate work — read the source. And some
+themes hand-write `wp-block-group__inner-container` in their own PHP templates;
+`remove_filter()` does not touch those, so a find-and-replace across a theme's
+stylesheets breaks the regions its templates still emit. Read the rendered output per
+site; do not sweep.
 
 ## The editor canvas is a second, hostile environment
 
