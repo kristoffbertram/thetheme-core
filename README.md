@@ -275,6 +275,79 @@ block earlier in the file doesn't shadow the real one. Under `WP_DEBUG`, a style
 that exists but yields no palette is logged rather than returning silently — the
 silence is what makes a missing palette read as a Gutenberg problem.
 
+## WordPress injects a div into every group block — the package removes it
+
+Core registers `wp_restore_group_inner_container()` on `render_block_core/group`
+(`wp-includes/block-supports/layout.php`; find it by string, the line number moves
+between core versions). When it runs, every non-flex, non-grid `core/group` leaves the
+renderer wrapped in an extra `div.wp-block-group__inner-container`, and the
+`is-layout-*` classes are **moved off** the group element onto that inner div:
+
+```html
+<!-- with core's filter active -->
+<div class="wp-block-group alignfull header-cta">
+  <div class="wp-block-group__inner-container is-layout-flow wp-block-group-is-layout-flow">
+    …
+  </div>
+</div>
+
+<!-- with the filter removed, which is what this package now does -->
+<div class="wp-block-group alignfull header-cta is-layout-flow wp-block-group-is-layout-flow">
+  …
+</div>
+```
+
+**Deleting `theme.json` is what switches it on.** The function's first bail is
+`wp_theme_has_theme_json()`, so it is inert on a site that has one. A site running this
+package has none — the convention deletes that file as part of the conversion — so
+converting a theme *enables* this filter as a side effect, and a rendered document
+silently gains a hop no theme in the estate was written against. Any stylesheet or
+script that reaches through a group with a direct-child chain stops matching:
+`.all > header > .wp-block-group > *` finds nothing, because `*` is now the injected
+div. That is not hypothetical — on one consumer it left the site header entirely
+unstyled, and 25 rules were dead before anyone looked at the markup.
+
+A bare `file_exists()` on `theme.json` changing rendered markup estate-wide is exactly
+the class of implicit core behaviour this package exists to take control of. Where core
+decides output from the presence of a file rather than from a declaration, the package
+states its position explicitly. So `thetheme_modules/defaults.php` unhooks it on `init`:
+
+```php
+remove_filter('render_block_core/group', 'wp_restore_group_inner_container', 10);
+```
+
+The wrapper goes and the layout classes stay on the group element itself — the removal
+does not cost you `is-layout-constrained` / `wp-block-group-is-layout-constrained`,
+which is the failure mode to check for if you ever reproduce this by hand.
+
+### Putting the div back — a conversion runway
+
+A theme that was ported *while* the filter was active may have adapted to it, with
+selectors that reach through `> .wp-block-group__inner-container >`. Removing the
+wrapper strands those. It can put the div back while it rewrites them:
+
+```php
+// thetheme_functions/app/wp-block-styles.php, or functions.php, or an mu-plugin
+add_filter('thetheme_restore_group_inner_container', '__return_true');
+```
+
+The default is `false` — do nothing and core's wrapper is gone. Register the filter no
+later than `after_setup_theme` priority 0; the gate is read on `init`, after the app
+layer loads. The callback is named, so a consumer can also unhook it outright:
+
+```php
+remove_action('init', 'thetheme_remove_group_inner_container');
+```
+
+This is a **conversion runway, not a per-site setting**, in exactly the sense of
+`thetheme_reset_core_block_styles` above. Markup that depends on *when* a site was
+converted is the drift this package exists to remove, so a theme sitting on `true` is
+mid-revert, not configured: rewrite the selectors, then delete the filter. Note also
+that some themes hand-write `wp-block-group__inner-container` in their own PHP
+templates — `remove_filter()` does not touch those, so a find-and-replace across a
+theme's CSS will break the regions its templates still emit. Read the rendered output
+per site; do not sweep.
+
 ## The editor canvas is a second, hostile environment
 
 `subsites.php` enqueues the resolved editor stylesheet as a native `<link>` on

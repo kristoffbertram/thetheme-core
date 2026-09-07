@@ -113,3 +113,49 @@ if (!function_exists('thetheme_remove_wp_embed')) {
     }
 }
 add_action('wp_footer', 'thetheme_remove_wp_embed');
+
+/**
+ * Stop WordPress injecting an extra div inside every group block.
+ *
+ * Core registers `wp_restore_group_inner_container()` on `render_block_core/group`
+ * (`wp-includes/block-supports/layout.php` — find it by string, the line number
+ * differs between core versions). When it runs, every non-flex, non-grid
+ * `core/group` comes out of the renderer wrapped in an extra
+ * `div.wp-block-group__inner-container`, and the `is-layout-*` classes are MOVED
+ * off the group element onto that inner div.
+ *
+ * The function's first bail is `wp_theme_has_theme_json()`, so it does nothing on a
+ * site that has a `theme.json`. A site running this package has none — that file is
+ * deleted as part of the conversion — so the conversion switches this filter on by
+ * construction, and a rendered document gains a hop that no theme in the estate was
+ * written against. Nine consumers took it untreated; on one of them it left the
+ * header unstyled, because 25 direct-child rules could no longer match.
+ *
+ * A bare `file_exists()` on `theme.json` silently changing rendered markup is exactly
+ * the class of implicit core behaviour this package exists to take control of. Where
+ * core decides output from the presence of a file rather than from a declaration, the
+ * package states its position explicitly. So: the wrapper goes, and the layout classes
+ * stay on the group element itself.
+ *
+ * `thetheme_restore_group_inner_container` is a CONVERSION RUNWAY, not a setting —
+ * the same shape as `thetheme_reset_core_block_styles` (see README.md § *Switching
+ * the reset off*). A theme whose stylesheet still reaches through
+ * `> .wp-block-group__inner-container >` can return true while it rewrites those
+ * selectors, and then delete the filter. Markup that depends on when a site was
+ * converted is the drift this package exists to remove: a site sitting on `true` is
+ * mid-revert, not configured.
+ *
+ * Register it no later than `after_setup_theme` priority 0 — the gate is read on
+ * `init`, after the app layer loads.
+ */
+if (!function_exists('thetheme_remove_group_inner_container')) {
+    function thetheme_remove_group_inner_container() {
+
+        if (apply_filters('thetheme_restore_group_inner_container', false)) {
+            return;
+        }
+
+        remove_filter('render_block_core/group', 'wp_restore_group_inner_container', 10);
+    }
+}
+add_action('init', 'thetheme_remove_group_inner_container');

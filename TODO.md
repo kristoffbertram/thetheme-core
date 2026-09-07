@@ -227,16 +227,19 @@ Everything past `v1.3.0`, which is now substantial:
 
 - **Two new modules** — `body-classes.php` and `security.php`.
 - **`defaults.php` extended** with HTML5, responsive embeds, page excerpts, emoji
-  removal and the oEmbed host script; **`editor.php`** takes `disable-custom-gradients`;
-  **`images.php`** gains the opt-in default-size stripper.
+  removal, the oEmbed host script and the group inner-container unhook (D11);
+  **`editor.php`** takes `disable-custom-gradients`; **`images.php`** gains the opt-in
+  default-size stripper.
 - **Fifteen earlier commits** carrying six filters (`thetheme_reset_core_block_styles`,
   the three asset-path filters, `thetheme_login_stylesheet`,
   `thetheme_log_registered_blocks`) plus fixes to the `@theme` parser, the
   single-subsite editor stylesheet, `fgc()` `$echo` and attribute escaping.
 - **`thetheme_app/` loader pass removed** (D7), and `wp-admin.php` deleted.
 
-All additive or opt-in except the two removals, neither of which any site depends on,
-so: **minor**.
+All additive or opt-in except the two removals and the group unhook (D11), so:
+**minor**. The group unhook is the one item in this release that changes rendered
+markup on every consumer, and four themes need the runway filter or a selector rewrite
+before they take it — see D11.
 
 THE SITES DO NOT HAVE ANY OF THIS YET. Every consuming theme runs a vendored snapshot;
 the app layers have already been stripped of the code these modules replace, so the
@@ -244,3 +247,47 @@ the app layers have already been stripped of the code these modules replace, so 
 then a site is missing behaviour it used to have.
 
 Tagging and pushing this repo is done by hand, never by an agent.
+
+---
+
+## D11 — The package removes core's group inner-container, and the switch is a runway
+
+`thetheme_modules/defaults.php` unhooks `wp_restore_group_inner_container` from
+`render_block_core/group` on `init`, gated by
+`apply_filters('thetheme_restore_group_inner_container', false)`.
+
+**Why it is the package's call and not each site's.** Core's function bails on
+`wp_theme_has_theme_json()`. The convention deletes `theme.json` from every site this
+package converts, so converting a theme switches the filter *on* by construction: every
+non-flex, non-grid `core/group` gains a `div.wp-block-group__inner-container`, and the
+`is-layout-*` classes move off the group element onto it. Nine consumers took that
+untreated. On one it left the site header unstyled — 25 direct-child rules that could
+no longer match — and nothing in the filesystem instrument could see it, because no
+clause measures rendered output.
+
+A bare `file_exists()` on `theme.json` changing markup estate-wide is the class of
+implicit core behaviour this package exists to take control of. Where core decides
+output from the presence of a file rather than from a declaration, the package states
+its position. That reasoning outlives this particular fix.
+
+**Why the filter defaults to `false` and is documented as a runway, not a setting.**
+Four themes were ported while the injection was live and adapted to it, with selectors
+that reach through `> .wp-block-group__inner-container >`. They can return `true` while
+they rewrite. But markup that depends on *when* a site was converted is the drift this
+package exists to remove, so the switch is documented in the same words as
+`thetheme_reset_core_block_styles`: a theme sitting on `true` is mid-revert, not
+configured. The alternative — leaving the injection in place and having each site adapt
+— was considered and rejected for that reason.
+
+**Two traps for the revert.** Selector counts taken from built CSS are the same source
+chain fanned out by the compiler, not separate work, and built files are never
+hand-edited. And at least two themes hand-write the inner-container div in their own
+PHP templates; `remove_filter()` does not touch those, so a find-and-replace across a
+theme's stylesheets breaks the regions its templates still emit. Per-site, against
+rendered output.
+
+**Verified by execution, not by reading the diff.** One consumer's front page rendered
+through its own `wp-load.php` both ways: 26 occurrences of
+`wp-block-group__inner-container` before, 0 after, with `is-layout-constrained` /
+`wp-block-group-is-layout-constrained` counts unchanged and now sitting on the outer
+`.wp-block-group` element.
