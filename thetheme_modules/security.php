@@ -280,9 +280,36 @@ unset($thetheme_feed);
  *
  * A site running an SEO plugin is unaffected either way: those plugins disable core's
  * sitemap and serve their own, which is a controlled surface and not touched here.
+ *
+ * WHAT A CONSUMER GETS WHEN IT OPTS IN: pages and posts, and nothing else
+ * (thetheme-core-D35). Core registers three providers — `posts`, `taxonomies`, `users`
+ * (wp-includes/sitemaps/class-wp-sitemaps.php) — and two of them are dropped below
+ * unconditionally. There is no filter to switch them back on; that is the point.
+ *
+ *   - `users` publishes every author name at /wp-sitemap-users-1.xml. That is username
+ *     disclosure, and this same module already redirects /author/<name>/ for exactly
+ *     that reason: handing the same list back as XML would undo through one surface
+ *     what is closed on another.
+ *   - `taxonomies` publishes category and tag archives, which is not what "pages and
+ *     posts only" means.
+ *
+ * The surviving `posts` provider is pinned to `post` and `page` rather than left to
+ * carry every public post type, so a consumer that registers a custom type does not
+ * publish it without having decided to.
+ *
+ * The URL is core's and stays core's: nothing here touches /wp-sitemap.xml, the
+ * rewrite rules or robots.txt.
  */
 add_filter('wp_sitemaps_enabled', function ($enabled) {
     return (bool) apply_filters('thetheme_enable_xml_sitemap', false);
+});
+
+add_filter('wp_sitemaps_add_provider', function ($provider, $name) {
+    return in_array($name, ['users', 'taxonomies'], true) ? null : $provider;
+}, 10, 2);
+
+add_filter('wp_sitemaps_post_types', function ($post_types) {
+    return array_intersect_key($post_types, ['post' => true, 'page' => true]);
 });
 
 /**
