@@ -336,6 +336,59 @@ themes hand-write `wp-block-group__inner-container` in their own PHP templates;
 stylesheets breaks the regions its templates still emit. Read the rendered output per
 site; do not sweep.
 
+## What a deleted `theme.json` hands back
+
+The convention deletes `theme.json` on a site that runs this package, and the group
+div above is not the only thing that file was holding down. WordPress reads a number
+of editor settings from it and, in its absence, hands each one back to core's own
+default — a picker reappears, a scale changes, a toggle vanishes. None of it errors.
+The list below is what a port checks; it is split by who owns the answer.
+
+**Covered by the package** — declared once in `thetheme_modules/editor.php`, nothing
+to add per site:
+
+- `color.defaultGradients` — an **empty** `editor-gradient-presets`. For a classic theme
+  the presence of that support is what sets `defaultGradients` false; the empty set is
+  the package's position, and a theme with presets of its own re-declares the support
+  after this module with its set.
+- `spacing.spacingSizes` — `editor-spacing-sizes`, the estate scale (`20`–`90`, WordPress's
+  own slugs so `var:preset|spacing|N` in published content keeps resolving). Its
+  presence sets `defaultSpacingSizes` false.
+- `typography.dropCap` — no classic-theme support exists, so `thetheme_disable_drop_cap`
+  sets it false on `block_editor_settings_all`, the last hook before the payload
+  reaches the editor.
+- `layout` Wide/Full — `align-wide`. Core gates the layout-driven toggle on
+  `'supportsLayout' => wp_theme_has_theme_json()` (`wp-admin/edit-form-blocks.php:279`),
+  which leaves `'alignWide' => get_theme_support('align-wide')`
+  (`wp-includes/block-editor.php:215`) as the only route on a theme.json-less theme.
+  Without the declaration the editor offers neither position while the stylesheet
+  targets `.alignwide` / `.alignfull` and published content carries both.
+
+**Per site** — declared in the theme's `thetheme_functions/app/`, and only when the
+site's *content* is measured to depend on it. Both open a picker the package keeps
+closed, for the reason already under `disable-custom-colors` / `-font-sizes` /
+`-gradients`: a free-form value written into content is one the stylesheet cannot
+style.
+
+- `spacing.units` — `add_theme_support('custom-units', ...)`. Opens the unit picker on
+  every dimension control.
+- `spacing.blockGap` / `margin` / `padding` / `border.*` (and link colour, `minHeight`) —
+  `add_theme_support('appearance-tools')`, which core maps to
+  `settings.appearanceTools` (`wp-includes/class-wp-theme-json-resolver.php:376`).
+  **`blockGap` is a front-end loss, not an editor-picker one.**
+  `wp_render_layout_support_flag` (`wp-includes/block-supports/layout.php`) reads the
+  global `spacing.blockGap` and only emits an editor-set gap while that setting is
+  non-null — so a site whose content already carries
+  `gap:var(--wp--preset--spacing--N)` silently falls to core's `0.5em` default without
+  it, and nothing in the editor looks different.
+
+The rule for the second group is the one the conversion already runs on: a port that
+finds `theme.json` doing something the package does not cover **stops and reports**
+rather than deleting and hoping. Finding one of the per-site settings in use is that
+case — declare it in the site's app layer, not in the package, and say so in the
+conversion notes. Moving it into the package would open the picker on every consumer
+to fix one.
+
 ## The editor canvas is a second, hostile environment
 
 `subsites.php` enqueues the resolved editor stylesheet as a native `<link>` on
