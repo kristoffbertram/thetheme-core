@@ -129,12 +129,17 @@ add_theme_support('disable-custom-gradients');
  * settings.color.defaultGradients to false as soon as 'editor-gradient-presets' is
  * present at all (the !wp_theme_has_theme_json() branch in
  * wp-includes/class-wp-theme-json-resolver.php). There is no separate "disable"
- * support to call, so declaring an empty set is how core's six defaults go away.
+ * support to call, so declaring an empty set is how core's own defaults (twelve on
+ * the WordPress the estate runs) go away.
  *
  * Empty rather than a set of our own for the same reason as the line above: the
  * stylesheet owns what a block may look like, and a preset offered in the picker is a
- * value written into content that the stylesheet then has to style. Nothing on this
- * estate has ever used one.
+ * value written into content that the stylesheet then has to style. The empty set is
+ * the package's position, not a claim that no site needs presets — content on the
+ * estate does carry `has-*-gradient-background` classes. A theme with presets of its
+ * own declares 'editor-gradient-presets' itself, with its set — theme code runs after
+ * this module, and the later declaration replaces this one. Core's defaults stay off
+ * either way, since the same branch only tests that the support is present.
  *
  * An empty array survives the round trip — get_classic_theme_supports_block_editor_settings()
  * tests `false !== $gradient_presets`, not truthiness — so this is not silently a no-op.
@@ -173,6 +178,28 @@ add_theme_support('editor-spacing-sizes', [
     ['name' => '2X-Large', 'slug' => '80', 'size' => '8rem'],
     ['name' => '3X-Large', 'slug' => '90', 'size' => '12rem'],
 ]);
+
+/**
+ * Wide and full alignment.
+ *
+ * Core decides whether the editor offers Wide/Full from the presence of a file.
+ * wp-admin/edit-form-blocks.php:279 sets 'supportsLayout' => wp_theme_has_theme_json(),
+ * and with that false the only route left is wp-includes/block-editor.php:215,
+ * 'alignWide' => get_theme_support('align-wide'). A site on this package has no
+ * theme.json — the convention deletes it as part of the conversion — so without this
+ * line no consumer's editor offers either position, while the estate's stylesheets
+ * target .alignwide / .alignfull and published content already carries both.
+ *
+ * Sits beside the switches above without contradicting them: it opens no free-form
+ * picker. Wide and Full are two named positions the stylesheet already styles, not a
+ * value written into content that the stylesheet cannot. Same class of decision as the
+ * group inner-container removal in defaults.php — where core decides behaviour from a
+ * bare file_exists(), the package states its position explicitly. The two supports
+ * that DO open pickers — 'custom-units' and 'appearance-tools' — are deliberately not
+ * here; a site whose content needs them declares them in its own app layer (see
+ * README.md § What a deleted theme.json hands back).
+ */
+add_theme_support('align-wide');
 
 /**
  * No drop cap.
