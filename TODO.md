@@ -223,28 +223,39 @@ that publishes a feed people actually subscribe to turns it back on.
 
 ## D10 — Next release is v1.4.0
 
-Everything past `v1.3.0`, which is now substantial:
+Everything past `v1.3.0` — thirty-one commits at `22dd584`, two of them merges — which is
+now substantial:
 
-- **Two new modules** — `body-classes.php` and `security.php`.
+- **Two new modules** — `body-classes.php` and `security.php`; the latter closes REST,
+  feeds, the core XML sitemap and oEmbed by default (D9), and when a site opts the
+  sitemap back in it gets posts and pages only.
 - **`defaults.php` extended** with HTML5, responsive embeds, page excerpts, emoji
   removal, the oEmbed host script and the group inner-container unhook (D11);
-  **`editor.php`** takes `disable-custom-gradients`; **`images.php`** gains the opt-in
-  default-size stripper.
+  **`editor.php`** declares the five switches a deleted `theme.json` hands back —
+  `disable-custom-gradients`, an empty `editor-gradient-presets`, `editor-spacing-sizes`,
+  drop cap off and `align-wide`; **`images.php`** gains the opt-in default-size stripper.
 - **Fifteen earlier commits** carrying six filters (`thetheme_reset_core_block_styles`,
   the three asset-path filters, `thetheme_login_stylesheet`,
   `thetheme_log_registered_blocks`) plus fixes to the `@theme` parser, the
   single-subsite editor stylesheet, `fgc()` `$echo` and attribute escaping.
-- **`thetheme_app/` loader pass removed** (D7), and `wp-admin.php` deleted.
+- **`thetheme_app/` loader pass removed** (D7), the walk sorted, and `wp-admin.php`
+  deleted.
+- **`LICENSE` (MIT) in the tree** — `v1.3.0` declares MIT with no licence file — and
+  `.gitattributes` `export-ignore` for `HANDBOOK.md`, `CLAUDE.md`, `.DS_Store`.
 
 All additive or opt-in except the two removals and the group unhook (D11), so:
 **minor**. The group unhook is the one item in this release that changes rendered
-markup on every consumer, and it is unconditional — four themes need their selectors
-rewritten before they take this version. See D11.
+markup on every consumer, and it is unconditional — four themes had selectors that
+assumed the div, and each rewrites them before it takes this version. See D11.
 
-THE SITES DO NOT HAVE ANY OF THIS YET. Every consuming theme runs a vendored snapshot;
-the app layers have already been stripped of the code these modules replace, so the
-`composer update` that lands this version is what makes the two halves meet. Until
-then a site is missing behaviour it used to have.
+THE SITES ALREADY RUN THIS. Every consuming theme vendors the package through a path
+repository, and all thirteen took the tree as of `1ddb5a8` — the module refactor — by
+forced re-copy on 2026-09-02; the app layers were stripped of the code these modules
+replace in the same pass, so the two halves already meet. `purifier.net` has run it in production since 2026-09-09;
+`thermoking.be` and `boulesdanvers.be` carry the whole unpublished pile. What the tag
+changes is the vcs route only: a theme requiring `^1.1` against GitHub resolves `v1.3.0`
+today — MIT declared with no `LICENSE`, REST open — and `v1.4.0` the moment it exists.
+The changelog is `README.md` § Status.
 
 Tagging and pushing this repo is done by hand, never by an agent.
 

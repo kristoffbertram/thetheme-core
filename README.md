@@ -612,3 +612,70 @@ core-tracking block, alongside any intentional deviations.
   The commit message and the original note both said "inside the iframe"; that is the
   case it was written for, not a guarantee — see *The editor canvas is a second, hostile
   environment*, which is the current account of what the canvas actually is.
+- **v1.4.0** (2026-09-15) — the package takes over what the app layers used to carry, and
+  closes what nothing consumes. Every consumer on a path repository already runs this tree
+  (vendored 2026-09-02); the tag is what the vcs route resolves.
+  - **BREAKING (markup):** the `div.wp-block-group__inner-container` WordPress injects into
+    every non-flex, non-grid `core/group` is removed on every consumer, unconditionally —
+    `defaults.php` unhooks `wp_restore_group_inner_container` at file scope, and there is no
+    opt-out filter. Selectors that assumed the div (four themes had them) are rewritten
+    before a site takes this version. See *WordPress injects a div into every group block*.
+  - **BREAKING (loader):** the retired `thetheme_app/` pass is gone from the app loader —
+    only `thetheme_functions/` is walked. Verified to affect no consumer: none has the
+    directory. The walk is now sorted (`SORT_STRING`), so load order is documented rather
+    than filesystem-dependent.
+  - **Default changes, live estate-wide since 2026-09-02:** `thetheme_rest_requires_auth`
+    is **`true`** — the REST API answers 401 to anonymous callers unless a theme returns
+    `false` from the filter or lists route prefixes in `thetheme_public_rest_routes`; and
+    `thetheme_login_error_message` returns a generic string where the originals returned
+    `''`.
+  - New module `security.php`: REST behind auth, feed endpoints 404, oEmbed off, the core
+    XML sitemap off — and trimmed to `post` + `page` when a site opts it back in (the
+    `users` and `taxonomies` providers are dropped with no filter); three user-enumeration
+    vectors closed (`?author=N`, the REST users endpoints, oEmbed `author_name`); RSD,
+    generator tag, shortlink, XML-RPC and `X-Pingback` removed with no switch.
+  - New module `body-classes.php`.
+  - Module rename/split: `editing.php` → `editor.php`; `developing.php` → `templating.php`
+    + `debug.php`; the empty `wp-admin.php` deleted.
+  - `editor.php` declares the five switches a deleted `theme.json` hands back to WordPress:
+    `disable-custom-gradients`, an empty `editor-gradient-presets`, `editor-spacing-sizes`,
+    drop cap off (via `block_editor_settings_all`), and `align-wide`. See *What a deleted
+    `theme.json` hands back*.
+  - New filters, default in brackets. The first six replace a hard-coded literal with the
+    same literal; the rest arrived with the modules above:
+    - `thetheme_reset_core_block_styles` (`true`) — the core-block style dequeue; the
+      dequeue is now a named function (`thetheme_dequeue_core_block_styles`) a theme can
+      unhook, and the filter is read on `after_setup_theme` priority 1.
+    - `thetheme_default_stylesheet` (`assets/css/www/app.css`)
+    - `thetheme_default_script` (`assets/js/www/app.js`)
+    - `thetheme_default_editor_stylesheet` (`assets/css/www/editor.css`)
+    - `thetheme_login_stylesheet` (`assets/css/wp-login.css`)
+    - `thetheme_log_registered_blocks` (`false`) — the registered-block debug log.
+    - `thetheme_removed_default_image_sizes` (`[]`) — opt-in stripper of core's default
+      image sizes; an empty list does nothing.
+    - `thetheme_html5_markup` (`true`)
+    - `thetheme_responsive_embeds` (`true`)
+    - `thetheme_page_excerpts` (`true`)
+    - `thetheme_excerpt_more_text` (`''`)
+    - `thetheme_remove_emoji_support` (`true`)
+    - `thetheme_remove_wp_embed` (`true`)
+    - `thetheme_body_classes` (`true`)
+    - `thetheme_rest_requires_auth` (**`true`**)
+    - `thetheme_public_rest_routes` (`[]`)
+    - `thetheme_disable_feeds` (`true`)
+    - `thetheme_enable_xml_sitemap` (`false`)
+    - `thetheme_disable_oembed` (`true`)
+    - `thetheme_block_user_enumeration` (`true`)
+    - `thetheme_remove_feed_links` (`true`)
+    - `thetheme_hide_admin_bar` (`true`)
+    - `thetheme_login_error_message` (generic string)
+    - `thetheme_redirect_author_archives` (`true`)
+    - `thetheme_disallow_file_edit` (`true`)
+    - `thetheme_security_headers` (header map; no HSTS, no CSP)
+  - Fixes: the `@theme` palette parser ignores comments and takes the last `@theme` block;
+    the editor stylesheet resolves on a single-subsite site with no post id; `fgc()`
+    honours `$echo`; `alt` and `class` are escaped in `thetheme_image()`.
+  - `LICENSE` (MIT) is in the tree — `v1.3.0` declared MIT in `composer.json` with no
+    licence file.
+  - Repo hygiene: `.gitattributes` marks `HANDBOOK.md`, `CLAUDE.md` and `.DS_Store`
+    `export-ignore`, so none of them reaches a Composer dist.
