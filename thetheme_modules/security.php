@@ -203,6 +203,16 @@ if (apply_filters('thetheme_disallow_file_edit', true) && !defined('DISALLOW_FIL
  * The block editor, and every plugin that uses REST from wp-admin, are unaffected —
  * those callers are logged in.
  *
+ * WP Migrate is unaffected too, and needs nothing named here. Its site-to-site
+ * transport is not REST: the remote is called on admin-ajax.php and answers on
+ * wp_ajax_nopriv_wpmdb_*, signed against the connection key — a path this filter
+ * never sees. Its mdb-api/v1 REST namespace is the logged-in dashboard's own API and
+ * every route on it carries the plugin's own permission_callback
+ * (current_user_can('export')), so an anonymous caller is refused by the plugin
+ * with or without this lock. Measured 2026-09-16 on WP Migrate 2.7.11: anonymous
+ * admin-ajax reached the plugin's handler on a locked site with no allow-through;
+ * anonymous /wp-json/mdb-api/v1/* got 401 from the plugin on a site with one.
+ *
  * A route that genuinely must answer anonymously is named, not switched on wholesale:
  *
  *     add_filter('thetheme_public_rest_routes', fn($r) => [...$r, '/wp/v2/search']);
