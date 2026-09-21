@@ -56,7 +56,22 @@ add_theme_support('editor-font-sizes', [
     ['name' => '9xl', 'slug' => '9xl', 'size' => '8rem'],
 ]);
 
-add_theme_support('editor-line-height');
+/**
+ * Line-height control.
+ *
+ * 'custom-line-height' is the name core reads — wp-includes/block-editor.php:815,
+ * 'enableCustomLineHeight' => get_theme_support('custom-line-height') — and the only
+ * one it reads. This line said 'editor-line-height' from the June 2026 extraction until
+ * 2026-09-21; nothing in wp-includes or wp-admin has ever looked for that string, so the
+ * control the module README claimed for the whole estate was on no consumer.
+ *
+ * It sits among the switches above without contradicting them: this is one numeric
+ * control on the typography panel, not a free-form picker, and published content on the
+ * estate already carries `line-height:N` values that the editor cannot show or edit
+ * without it. The two supports that DO open pickers — 'custom-units' and
+ * 'appearance-tools' — stay per site (see the align-wide docblock below).
+ */
+add_theme_support('custom-line-height');
 
 /**
  * Colours
