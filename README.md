@@ -363,6 +363,15 @@ to add per site:
   (`wp-includes/block-editor.php:215`) as the only route on a theme.json-less theme.
   Without the declaration the editor offers neither position while the stylesheet
   targets `.alignwide` / `.alignfull` and published content carries both.
+- `typography.lineHeight` — `custom-line-height`, the classic-theme support name core
+  maps to it: `'enableCustomLineHeight' => get_theme_support('custom-line-height')`
+  (`wp-includes/block-editor.php:815`), carried into `typography.lineHeight` by
+  `WP_Theme_JSON::get_from_editor_settings()`. (`class-wp-theme-json.php:290`,
+  `'line-height' => ['typography','lineHeight']`, is the *other* direction — the
+  `theme.json` key core reads; the support is what a theme.json-less theme declares.)
+  Without it the line-height control is absent and `line-height:N` values already in
+  published content can be neither seen nor edited. The package declared
+  `editor-line-height` — a name nothing reads — until 2026-09-21.
 
 **Per site** — declared in the theme's `thetheme_functions/app/`, and only when the
 site's *content* is measured to depend on it. Both open a picker the package keeps
@@ -679,3 +688,9 @@ core-tracking block, alongside any intentional deviations.
     licence file.
   - Repo hygiene: `.gitattributes` marks `HANDBOOK.md`, `CLAUDE.md` and `.DS_Store`
     `export-ignore`, so none of them reaches a Composer dist.
+- **v1.4.1** (unreleased, written 2026-09-21) — the line-height support name corrected.
+  `editor.php` declared `editor-line-height`, a name WordPress has never read; it now
+  declares `custom-line-height`, the one `wp-includes/block-editor.php:815` maps to
+  `enableCustomLineHeight`. Consumers that re-vendor gain the editor's line-height control
+  — the one `line-height:N` values already in published content need — and nothing else
+  changes. See *What a deleted `theme.json` hands back*.
