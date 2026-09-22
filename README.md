@@ -737,7 +737,7 @@ core-tracking block, alongside any intentional deviations.
     licence file.
   - Repo hygiene: `.gitattributes` marks `HANDBOOK.md`, `CLAUDE.md` and `.DS_Store`
     `export-ignore`, so none of them reaches a Composer dist.
-- **v1.4.1** (unreleased, written 2026-09-21) — the line-height support name corrected.
+- **v1.4.1** (2026-09-22) — the line-height support name corrected.
   `editor.php` declared `editor-line-height`, a name WordPress has never read; it now
   declares `custom-line-height`, the one `wp-includes/block-editor.php:815` maps to
   `enableCustomLineHeight`. Consumers that re-vendor gain the editor's line-height control
