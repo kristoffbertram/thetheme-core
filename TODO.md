@@ -311,3 +311,56 @@ through its own `wp-load.php` both ways: 6 occurrences of
 `wp-block-group-is-layout-constrained` counts unchanged (10 / 5) and now sitting on the
 outer `.wp-block-group` element. Measured again on the unconditional shape; an earlier
 consumer read 26 / 0 on the guarded one.
+
+---
+
+## D12 — The package ships one parity partial, and it is the button
+
+`reference/_wp-buttons.scss` is copy-source for the `core/buttons` / `core/button`
+rules every port pastes into its own `_wp.scss`. Nothing in the package requires,
+enqueues or compiles it; the runtime is identical with or without it.
+
+**Why an exception to "styling lives in the project".** The button is the block a
+conversion misses *invisibly*. A theme's house button look is written through the
+wrapper — `.wp-block-buttons .wp-block-button a` — and that covers every button the
+theme's own patterns emit, so the site reads as finished. It does not cover a
+`wp:button` saved with no `wp:buttons` wrapper, which the editor permits and authors
+produce. With `wp-block-library` and `global-styles` both dequeued, those render as
+bare anchor text. vigc.be carried three on its home page until 2026-09-22.
+
+The estate audit the same day is what makes it a *package* problem rather than one
+site's oversight. Nine consumers run with the reset on. **No two of them solved the
+button the same way**: two transcribed core's rules nearly whole (thermo-king.co.uk,
+truck), two paint only `.wp-element-button` and so miss content saved before WP 6.1
+(legerogroup, and thermoking.be which at least names both classes), one wrote the
+structure and no appearance at all (e-zone), and three carry nothing — saved for now
+only by an allowlist that happens to exclude `core/button` (purifier.net,
+staging.europe.thermoking.com, toolboxes). Nine independent transcriptions of one
+core stylesheet, all different, is the shape of a rule that belongs in the package.
+Nine more are queued behind it: the consumers still on the
+`thetheme_reset_core_block_styles` runway hit this the day they delete that filter.
+
+**Why a file and not prose in the README.** The README already described what a
+`_wp.scss` is for, and it did not stop this. A rule set every port needs, transcribed
+by hand each time, is transcribed differently each time — the nine reset-on sites
+differ from each other in exactly that way. A file cannot be transcribed wrong.
+
+**The boundary that keeps it reference.** `reference/` is not loaded. The moment
+anything under it is enqueued or `require`d by the engine, it has stopped being
+reference and has become an asset the package owns — which is the fight the reset
+exists to end, restarted from the other side.
+
+**What is deliberately not in it.** No `display: flex` on `.wp-block-buttons`: the row's
+flex comes from the layout support (`core-block-supports`), which the reset leaves
+registered, and restating it would be a second mechanism plus a fight with the block-gap
+variable. No `!important`, which costs core's `no-border-radius` rule — a project that
+wants the squared style copies that pair itself, having decided it does. The default
+appearance is `:root :where(.wp-element-button, .wp-block-button__link)` at `(0,1,0)`:
+enough to paint an unstyled button, little enough that any two-part theme selector wins.
+
+**Derived from core, not from a site.** `wp-includes/blocks/buttons/style.css`,
+`wp-includes/blocks/button/style.css` and `wp-includes/theme.json`
+`styles.elements.button`, read from a WordPress tree in the estate — so it can be
+re-derived rather than trusted. `wp-element-button` is on markup saved by WP 6.1+ and
+older content carries only `wp-block-button__link`, which is why core names both and so
+does this.

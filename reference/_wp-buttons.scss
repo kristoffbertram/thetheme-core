@@ -1,0 +1,136 @@
+/**
+ * Core-block parity — `core/buttons` and `core/button`.
+ *
+ * COPY-SOURCE. Nothing in this package loads this file; it is not enqueued, not
+ * imported, not compiled here. It is the baseline a port pastes into its own
+ * `_wp.scss` partial (see README, "`_wp.scss` is the answer") so the button block
+ * cannot be the block a conversion forgets.
+ *
+ * Why the button block gets shipped when no other one does. The reset in
+ * `thetheme_modules/editor.php` dequeues `wp-block-library` AND `global-styles`, so
+ * a core button arrives with no CSS of any kind. Themes do not notice, because the
+ * house button look is nearly always written through the wrapper —
+ * `.wp-block-buttons .wp-block-button a` — and that selector matches every button
+ * the theme's own patterns emit. It does not match a `wp:button` placed WITHOUT a
+ * `wp:buttons` wrapper, which the editor permits and content authors do. Such a
+ * button then renders as bare anchor text, on a page that otherwise looks correct.
+ * vigc.be shipped three of them on its home page for months (2026-09-22).
+ *
+ * Sources, so this can be re-derived rather than trusted:
+ *   - `wp-includes/blocks/buttons/style.css`  → the `.wp-block-buttons` rules
+ *   - `wp-includes/blocks/button/style.css`   → `.wp-block-button`, the anchor,
+ *                                               `:where()` shape, `is-style-outline`
+ *   - `wp-includes/theme.json` `styles.elements.button` → the default appearance,
+ *     which core emits as `:root :where(.wp-element-button,.wp-block-button__link)`
+ *     into `global-styles`. `wp-element-button` is on markup saved by WP 6.1+;
+ *     older content carries only `wp-block-button__link`, which is why both are
+ *     named.
+ *
+ * `display: flex` is deliberately NOT here. The row's flex behaviour comes from the
+ * layout support (`wp-container-core-buttons-is-layout-*`, printed to the
+ * `core-block-supports` handle), which the reset does not touch — it dequeues only
+ * `wp-block-library`, `classic-theme-styles` and `global-styles`. Restating it here
+ * would be a second mechanism for one outcome, and it would fight the block-gap
+ * variable. If a button row is not laying out, check that handle is present before
+ * hard-coding flex.
+ *
+ * Specificity. `:root :where(…)` resolves to (0,1,0): the `:where()` contributes
+ * nothing and `:root` supplies the one class-weight. It is high enough to paint an
+ * unstyled button and low enough that any two-part theme selector overrides it. Do
+ * not add `!important` — a parity partial that shouts is one no block can override.
+ *
+ * Adapting it. Swap the `#32373c` / `#fff` pair for the theme's own token the moment
+ * the theme has one; leaving core's grey is the honest default, not a finished look.
+ * On Tailwind v4 the partial that receives this must open with
+ * `@reference "tailwindcss";`. Written flat, so it is valid CSS as well as SCSS — a
+ * theme with no sass step (CodeKit, a hand-maintained build) can paste it straight
+ * into its compiled stylesheet.
+ */
+
+/* ── core/buttons: the row ──────────────────────────────────────────────────── */
+
+.wp-block-buttons { box-sizing: border-box; }
+.wp-block-buttons > .wp-block-button { display: inline-block; margin: 0; }
+.wp-block-buttons.is-vertical { flex-direction: column; }
+.wp-block-buttons.is-vertical > .wp-block-button:last-child { margin-bottom: 0; }
+
+.wp-block-buttons.is-content-justification-left { justify-content: flex-start; }
+.wp-block-buttons.is-content-justification-left.is-vertical { align-items: flex-start; }
+.wp-block-buttons.is-content-justification-center { justify-content: center; }
+.wp-block-buttons.is-content-justification-center.is-vertical { align-items: center; }
+.wp-block-buttons.is-content-justification-right { justify-content: flex-end; }
+.wp-block-buttons.is-content-justification-right.is-vertical { align-items: flex-end; }
+.wp-block-buttons.is-content-justification-space-between { justify-content: space-between; }
+
+.wp-block-buttons.aligncenter { text-align: center; }
+.wp-block-buttons .wp-block-button__link { width: 100%; }
+.wp-block-buttons.has-custom-font-size .wp-block-button__link { font-size: inherit; }
+.wp-block-buttons > .wp-block-button.has-custom-width { max-width: none; }
+
+/* ── core/button: the block element ─────────────────────────────────────────── */
+
+.wp-block-button.aligncenter { text-align: center; }
+.wp-block-button.alignright { text-align: right; }
+
+/* ── core/button: the anchor ────────────────────────────────────────────────── */
+
+.wp-block-button__link {
+    box-sizing: border-box;
+    cursor: pointer;
+    display: inline-block;
+    text-align: center;
+    word-break: break-word;
+}
+
+.wp-block-button__link.aligncenter { text-align: center; }
+.wp-block-button__link.alignright { text-align: right; }
+
+/* The shape, at `:where()` weight so a theme's own radius/padding wins outright. */
+:where(.wp-block-button__link) {
+    border-radius: 9999px;
+    box-shadow: none;
+    padding: calc(0.667em + 2px) calc(1.333em + 2px);
+    text-decoration: none;
+}
+
+/* ── the default appearance `global-styles` used to paint ───────────────────── */
+
+:root :where(.wp-element-button, .wp-block-button__link) {
+    background-color: #32373c;
+    border-width: 0;
+    color: #fff;
+    font-family: inherit;
+    font-size: inherit;
+    font-style: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    line-height: inherit;
+    text-transform: inherit;
+    text-decoration: none;
+    padding: calc(0.667em + 2px) calc(1.333em + 2px);
+}
+
+/* ── the `is-style-outline` variant ─────────────────────────────────────────── */
+
+:root :where(.wp-block-button .wp-block-button__link.is-style-outline),
+:root :where(.wp-block-button.is-style-outline > .wp-block-button__link) {
+    border: 2px solid;
+    padding: 0.667em 1.333em;
+}
+
+:root :where(.wp-block-button .wp-block-button__link.is-style-outline:not(.has-text-color)),
+:root :where(.wp-block-button.is-style-outline > .wp-block-button__link:not(.has-text-color)) {
+    color: currentColor;
+}
+
+:root :where(.wp-block-button .wp-block-button__link.is-style-outline:not(.has-background)),
+:root :where(.wp-block-button.is-style-outline > .wp-block-button__link:not(.has-background)) {
+    background-color: initial;
+    background-image: none;
+}
+
+/* Not carried: core's `is-style-squared` / `no-border-radius` pair, because the
+   second of them is `border-radius: 0 !important` and this partial does not ship an
+   `!important` into a theme that then cannot override it. A project that allows the
+   squared style copies those two rules from `wp-includes/blocks/button/style.css`
+   itself, having decided it wants them. */
