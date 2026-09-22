@@ -39,6 +39,15 @@ the boot mu-plugin does the loading, precisely so that editing or gutting
 in the project (and are demonstrated in the template theme), never in the
 engine.
 
+**Not core either, and not an exception to that:** `reference/`. It holds copy-source a
+port pastes into its own theme and nothing else — today one file,
+`reference/_wp-buttons.scss` (see *`_wp.scss` is the answer*). Nothing in this package
+requires, enqueues or compiles anything under it, so the runtime is unchanged whether it
+is present or not. It exists because the alternative for a rule set every port needs
+was prose in this README, which a port reads once and copies by hand differently each
+time. A file that cannot be transcribed wrong is the point; the moment something under
+`reference/` is *loaded* by the engine, it has stopped being reference.
+
 ## The carve-out contract (core stays byte-identical)
 
 Core files must contain **zero project data**. Where core needs a per-project
@@ -259,6 +268,44 @@ plus the visually-hidden label. **It grows with the allowlist**: one rule per al
 core block that needs one. A short `_wp.scss` — or none at all — is not drift; it
 means that project allows few core blocks, or only ones that need no layout.
 
+#### The button block is the exception the package ships
+
+`reference/_wp-buttons.scss` is the one parity rule set that travels with this
+package. **Every port pastes it into its `_wp.scss`.** It is copy-source: nothing here
+enqueues, imports or compiles it, and a theme edits its copy freely afterwards.
+
+It is shipped because the button is the block a conversion reliably misses, and
+misses *invisibly*. A theme's house button look is almost always written through the
+wrapper — `.wp-block-buttons .wp-block-button a` — and that selector covers every
+button the theme's own patterns emit, so the site looks finished. It does not cover a
+`wp:button` placed **without** a `wp:buttons` wrapper, which the editor permits and
+content authors do. With `wp-block-library` and `global-styles` both gone, such a
+button is bare anchor text on a page that is otherwise correct. vigc.be carried three
+of them on its home page until 2026-09-22.
+
+So the partial restates what the two dequeued handles gave: the `.wp-block-buttons`
+row (`is-content-justification-*`, `is-vertical`), `.wp-block-button.aligncenter` /
+`.alignright`, the `.wp-block-button__link` base and its `:where()` shape, core's
+default appearance as `:root :where(.wp-element-button, .wp-block-button__link)`, and
+the `is-style-outline` variant. Two things the file says and this repeats because they
+are what a reader second-guesses:
+
+- **No `display: flex`.** The row's flex behaviour is the *layout support*
+  (`wp-container-core-buttons-is-layout-*`, printed to the `core-block-supports`
+  handle), which the reset leaves alone — it takes `wp-block-library`,
+  `classic-theme-styles` and `global-styles` and nothing else. Restating flex here
+  would be a second mechanism for one outcome and would fight the block-gap variable.
+  A row that will not lay out is a missing `core-block-supports`, not a missing rule.
+- **No `!important`, and `:root :where(…)` on purpose.** That resolves to `(0,1,0)` —
+  the `:where()` contributes nothing and `:root` supplies the weight. High enough to
+  paint an unstyled button, low enough that any two-part theme selector wins. Core's
+  `no-border-radius` rule *is* `!important`, which is why the partial leaves that pair
+  out; a project that wants the squared style copies it from
+  `wp-includes/blocks/button/style.css` having decided it does.
+
+Swap core's `#32373c` / `#fff` for the theme's own token as soon as there is one.
+Leaving the grey is an honest default, not a finished look.
+
 Token classes are the same story with a different home. `editor.php` derives the
 editor palette from `@theme { --color-*: … }` in the theme's SCSS entry and registers
 a font-size scale, so the editor writes `has-<slug>-color`,
@@ -425,8 +472,10 @@ element beats an inherited value at any specificity. So the canvas renders in th
 browser's serif while the front end is perfect, which reads as "the custom fonts aren't
 loading" and sends people hunting for a 404 that isn't there.
 
-The engine cannot fix this for you: it ships no SCSS, and the editor stylesheet's source
-is a project file. Restate the token in the **editor-only** SCSS entry:
+The engine cannot fix this for you: it enqueues no stylesheet of its own, and the editor
+stylesheet's source is a project file. (`reference/_wp-buttons.scss` is copy-source a port
+pastes, not something this package loads — it changes nothing here.) Restate the token in
+the **editor-only** SCSS entry:
 
 ```scss
 @import "shared";
@@ -694,3 +743,11 @@ core-tracking block, alongside any intentional deviations.
   `enableCustomLineHeight`. Consumers that re-vendor gain the editor's line-height control
   — the one `line-height:N` values already in published content need — and nothing else
   changes. See *What a deleted `theme.json` hands back*.
+  - `reference/_wp-buttons.scss` added: the core-block parity rules for
+    `core/buttons` / `core/button`, which every port now pastes into its `_wp.scss`. The
+    button is the block a conversion misses invisibly — the house look is written through
+    `.wp-block-buttons .wp-block-button a`, which never reaches a `wp:button` saved with no
+    `wp:buttons` wrapper, so those render as bare anchor text on a page that otherwise looks
+    finished. Copy-source only: nothing in the package requires, enqueues or compiles it, so
+    **no runtime behaviour changes and a consumer that re-vendors gains a file it must still
+    paste**. See *The button block is the exception the package ships*.
