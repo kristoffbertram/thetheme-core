@@ -45,8 +45,12 @@ port pastes into its own theme and nothing else — today one file,
 requires, enqueues or compiles anything under it, so the runtime is unchanged whether it
 is present or not. It exists because the alternative for a rule set every port needs
 was prose in this README, which a port reads once and copies by hand differently each
-time. A file that cannot be transcribed wrong is the point; the moment something under
-`reference/` is *loaded* by the engine, it has stopped being reference.
+time. A file that cannot be transcribed wrong is the point — which puts the whole weight
+on the file being right: `_wp-buttons.scss` shipped one rule core does not write and
+every port that pasted it inherited the breakage (see the file's own *THE TRAP* note).
+A change here is a change to every future port, so it is re-derived against
+`wp-includes/`, not edited from memory. The moment something under `reference/` is
+*loaded* by the engine, it has stopped being reference.
 
 ## The carve-out contract (core stays byte-identical)
 
@@ -751,3 +755,15 @@ core-tracking block, alongside any intentional deviations.
     finished. Copy-source only: nothing in the package requires, enqueues or compiles it, so
     **no runtime behaviour changes and a consumer that re-vendors gains a file it must still
     paste**. See *The button block is the exception the package ships*.
+- **unreleased** — `reference/_wp-buttons.scss` re-derived against WP 6.6.1.
+  It shipped in `v1.4.1` with an unscoped `.wp-block-buttons .wp-block-button__link
+  { width: 100% }` that core writes nowhere: pasted faithfully it stretched **every**
+  button in a row, so a port was broken *by* following the reference. That line is gone,
+  core's own scoped widths are in (`.has-custom-width` pair, the `:not(.is-content-
+  justification-*) .wp-block-button.aligncenter` block, and the `wp-block-button__width-N`
+  set the editor's width control writes), the `[style*=text-decoration]` pairs are carried,
+  and the docblock now names the trap so the next re-derive cannot reintroduce it. The two
+  rules that are *not* core — `box-sizing` on the row, the `.wp-block-button.alignright`
+  wrapper form — are labelled as such in place. Still copy-source, so **no runtime
+  behaviour changes**; this rides the next behaviour cut rather than being its own release.
+  A port that already pasted the old file re-pastes the button section.

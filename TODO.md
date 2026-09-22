@@ -345,6 +345,24 @@ Nine more are queued behind it: the consumers still on the
 by hand each time, is transcribed differently each time — the nine reset-on sites
 differ from each other in exactly that way. A file cannot be transcribed wrong.
 
+**What that argument does not buy, learned the hard way (2026-09-22, the same day).**
+A file cannot be transcribed wrong, but it can be *authored* wrong, and then every
+port inherits one defect instead of nine different ones. The first cut shipped
+`.wp-block-buttons .wp-block-button__link { width: 100% }` — a selector core writes
+nowhere. Pasted faithfully it stretches every button in a row into a stacked full-width
+bar, so a port was broken precisely *by* trusting the file. Two sites had already taken
+it (vigc.be, thermo-king.co.uk) before it was caught. The rule that follows: **every
+width core writes for this block is scoped** — to `.has-custom-width`, to a
+`wp-block-button__width-N` class, or to a centred button in an unjustified row — and
+the file now says so in its own docblock. A change to `reference/` is re-derived
+against `wp-includes/` line by line, never edited from memory.
+
+**The `__width-N` set is carried** (thetheme-core-046). It is the output of the
+editor's own width control, so a site whose allowlist permits `core/button` reaches it;
+without the rules the control is silently inert, which is the same invisible failure the
+partial exists to prevent. The selectors are scoped to `.wp-block-buttons >
+.wp-block-button`, so a row that never uses them pays nothing.
+
 **The boundary that keeps it reference.** `reference/` is not loaded. The moment
 anything under it is enqueued or `require`d by the engine, it has stopped being
 reference and has become an asset the package owns — which is the fight the reset
