@@ -25,24 +25,49 @@
  *     into `global-styles`. `wp-element-button` is on markup saved by WP 6.1+;
  *     older content carries only `wp-block-button__link`, which is why both are
  *     named.
- * Last re-derived line by line against WP 6.6.1.
+ * Derived line by line against WordPress 7.0.4 — the lowest version any consumer
+ * of this package serves (2026-09-24) — and diff-checked against 7.1.2, the highest.
+ * Between the two, core's front-end button CSS differs in exactly one thing: 7.1
+ * adds the `[class*=wp-block-button__width]` pair (below, labelled). Prod core
+ * auto-updates, so the served version only moves up; a re-derive reads the LOWEST
+ * version in the estate and diff-checks the highest. Not 6.6.x: the previous
+ * re-derive (2026-09-22) read a 6.6.1 tree, which nothing on the package renders,
+ * and removed a rule core had been writing since 7.0 — see THE TRAP.
  *
- * THE TRAP, because this file once fell into it. **Every width core writes for this
- * block is scoped** — to `.has-custom-width`, to a `wp-block-button__width-N` class,
- * or to a centred button in a row with no justification set. Core writes no rule of
- * the form `.wp-block-buttons .wp-block-button__link { width: 100% }`, and an
- * unscoped one is not a harmless extra: it stretches EVERY button in a row, so a
- * two-button row renders as two stacked full-width bars. This file carried exactly
- * that line from 2026-09-22 (v1.4.1) until it was removed, which meant a port that
- * pasted the partial faithfully was broken *by* following it. If a re-derive is
- * about to add a width, check which selector core hangs it off first.
+ * THE TRAP, because this file fell into it twice, from opposite sides. Core DOES
+ * write `.wp-block-buttons .wp-block-button__link { width: 100% }` (7.0.4
+ * `blocks/buttons/style.css:57`), and `height: 100%` beside it (7.0.4
+ * `blocks/button/style.css:7`). Neither is a bar-shaped button: both size the anchor
+ * to its WRAPPER, and core keeps the wrapper content-sized —
+ * `.wp-block-buttons > .wp-block-button { display: inline-block; margin: 0 }`, a
+ * flex item in a row the layout support lays out with `align-items: center`. 100% of
+ * a content-sized box is the content, so a two-button row stays a row. The width
+ * becomes visible only when something else sizes the wrapper: `.has-custom-width`,
+ * a `wp-block-button__width-N` class, a centred button in an unjustified row, a
+ * child-layout `flex-grow`. The stacked full-width bars this file was blamed for
+ * (2026-09-22, v1.4.1) are what you get when the wrapper is NOT sized as core sizes
+ * it — `.wp-block-button` rendered as a plain block (the wrapper line above dropped
+ * from the paste, or a theme rule making it `display: block`) with no flex row
+ * around it. So the line a port must never drop is the wrapper line, and the two
+ * rules a port must confirm in its own `_wp.scss` are the ones core prints from
+ * `global-styles` for every flex layout, which the reset dequeues along with it:
+ *   body .is-layout-flex { display: flex; }
+ *   .is-layout-flex { flex-wrap: wrap; align-items: center; }
+ * Without `align-items: center` a flex row stretches its items, and `height: 100%`
+ * then gives every button in the row the height of the tallest — which is exactly
+ * what core does when the author picks the row's "Stretch" vertical alignment
+ * (`core-block-supports` prints `align-items: stretch` for that container), and
+ * not what core does by default. The width and height are carried because they are
+ * core's; the wrapper line and the layout base are what make them render as core's.
  *
  * `display: flex` is deliberately NOT here. The row's flex behaviour comes from the
- * layout support (`wp-container-core-buttons-is-layout-*`, printed to the
- * `core-block-supports` handle), which the reset does not touch — it dequeues only
- * `wp-block-library`, `classic-theme-styles` and `global-styles`. Restating it here
- * would be a second mechanism for one outcome, and it would fight the block-gap
- * variable. If a button row is not laying out, check that handle is present before
+ * layout base above (global-styles, re-carried by the site's `_wp.scss`) and the
+ * per-container rules the layout support prints to the `core-block-supports` handle
+ * (`wp-container-core-buttons-is-layout-*`: justification, gap, `nowrap`, vertical
+ * alignment), which the reset does not touch — it dequeues only `wp-block-library`,
+ * `classic-theme-styles` and `global-styles`. Restating it here would be a second
+ * mechanism for one outcome, and it would fight the block-gap variable. If a button
+ * row is not laying out, check that handle and the layout base are present before
  * hard-coding flex.
  *
  * Specificity. `:root :where(…)` resolves to (0,1,0): the `:where()` contributes
@@ -58,15 +83,16 @@
  * into its compiled stylesheet.
  */
 
-/* ── core/buttons: the row ──────────────────────────────────────────────────── */
+/* ── core/buttons: the row (7.0.4 blocks/buttons/style.css, in core's order) ──── */
 
-/* NOT core: core writes no `box-sizing` on the row. Carried because a theme that
-   gives the row padding gets the box model the rest of the estate assumes. Kept
-   labelled so a re-derive neither deletes it as an invention nor re-adds it blind. */
+/* Core since 7.0 (absent in 6.6.x, where this file once labelled it NOT core). */
 .wp-block-buttons { box-sizing: border-box; }
 
 .wp-block-buttons.is-vertical { flex-direction: column; }
 .wp-block-buttons.is-vertical > .wp-block-button:last-child { margin-bottom: 0; }
+
+/* THE WRAPPER LINE. Never drop it: it is what keeps `width: 100%` and `height: 100%`
+   on the anchor (below) sized to the content. See THE TRAP in the header. */
 .wp-block-buttons > .wp-block-button { display: inline-block; margin: 0; }
 
 .wp-block-buttons.is-content-justification-left { justify-content: flex-start; }
@@ -79,9 +105,9 @@
 
 .wp-block-buttons.aligncenter { text-align: center; }
 
-/* The only width core hangs off the row, and it is scoped twice over: the row must
-   carry no justification class, and the button itself must be `.aligncenter`. This
-   is the rule `.wp-block-buttons.aligncenter` above is the other half of. */
+/* A centred button in a row with no justification set: the wrapper goes full width
+   and the anchor fills it (via the unscoped width below). This is the rule
+   `.wp-block-buttons.aligncenter` above is the other half of. */
 .wp-block-buttons:not(.is-content-justification-space-between, .is-content-justification-right, .is-content-justification-left, .is-content-justification-center) .wp-block-button.aligncenter {
     margin-left: auto;
     margin-right: auto;
@@ -93,24 +119,37 @@
 
 .wp-block-buttons.has-custom-font-size .wp-block-button__link { font-size: inherit; }
 
-/* ── core/button: the block element ─────────────────────────────────────────── */
+/* Core since 7.0 (`blocks/buttons/style.css:57`). The anchor fills its WRAPPER, and
+   the wrapper is content-sized by the wrapper line above — so on a row this is the
+   content width, and it only shows when something sizes the wrapper (custom width,
+   `__width-N`, `.aligncenter` in an unjustified row, child-layout grow). This is the
+   line the 2026-09-22 re-derive removed as "written nowhere"; it read 6.6.1. */
+.wp-block-buttons .wp-block-button__link { width: 100%; }
 
 .wp-block-button.aligncenter { text-align: center; }
 
 /* NOT core: core writes `.wp-block-button__link.alignright` (below) but no wrapper
    form, while it does write the `.aligncenter` wrapper form above. Carried as the
    missing half of that asymmetry, and labelled so the next re-derive knows it did
-   not come out of core's stylesheet. */
+   not come out of core's stylesheet. Still absent at 7.1.2. */
 .wp-block-button.alignright { text-align: right; }
 
-/* ── core/button: the anchor ────────────────────────────────────────────────── */
+/* ── core/button: the anchor (7.0.4 blocks/button/style.css, in core's order) ──── */
 
+/* `height: 100%` + `align-content: center` are core since 7.0 (`:7-8`). Same logic
+   as the width: 100% of a content-height wrapper is the content, so under the layout
+   base's `align-items: center` nothing changes; under the row's "Stretch" vertical
+   alignment (`align-items: stretch` from `core-block-supports`) every button in the
+   row takes the tallest one's height and its label sits vertically centred. That is
+   the editor's own control; without the pair it is silently inert. */
 .wp-block-button__link {
-    box-sizing: border-box;
     cursor: pointer;
     display: inline-block;
     text-align: center;
     word-break: break-word;
+    box-sizing: border-box;
+    height: 100%;
+    align-content: center;
 }
 
 .wp-block-button__link.aligncenter { text-align: center; }
@@ -118,40 +157,65 @@
 
 /* The shape, at `:where()` weight so a theme's own radius/padding wins outright. */
 :where(.wp-block-button__link) {
-    border-radius: 9999px;
     box-shadow: none;
-    padding: calc(0.667em + 2px) calc(1.333em + 2px);
     text-decoration: none;
+    border-radius: 9999px;
+    padding: calc(0.667em + 2px) calc(1.333em + 2px);
 }
 
 .wp-block-button[style*="text-decoration"] .wp-block-button__link { text-decoration: inherit; }
 
-/* ── core/button: the widths, all of them scoped ────────────────────────────── */
+/* ── core/button: the widths ────────────────────────────────────────────────── */
 
 /* The custom-width pair. `max-width: none` alone does nothing visible — the width
    below it is what actually fills the box, and it applies only to a button the
-   editor has marked `.has-custom-width`. */
+   editor has marked `.has-custom-width`. (Since 7.0 the unscoped width above already
+   does this; core still writes the pair and so does this file.) */
 .wp-block-buttons > .wp-block-button.has-custom-width { max-width: none; }
 .wp-block-buttons > .wp-block-button.has-custom-width .wp-block-button__link { width: 100%; }
 
 .wp-block-buttons > .wp-block-button.has-custom-font-size .wp-block-button__link { font-size: inherit; }
 
-/* The `__width-N` set is what the editor's own width control writes, so a site whose
-   allowlist permits `core/button` will hit it. Without these the control is silently
-   inert — the same class of failure this partial exists to prevent — and the
-   selectors are scoped to `.wp-block-buttons > .wp-block-button`, so they cost a row
-   that never uses them nothing. Carried for that reason (thetheme-core-046). */
+/* 7.1+ only (`blocks/button/style.css:38-40` at 7.1.2; absent at 7.0.4): the editor's
+   width control became free-form, and writes `--wp--block-button--width: N` as an
+   inline style beside a `wp-block-button__width-N` class. Carried because a 7.1 site
+   that permits `core/button` reaches it and the control is otherwise silently inert;
+   costs a 7.0 site nothing (no markup matches). It MUST stay above the preset set
+   below: same specificity, and core relies on source order so a preset class wins. */
+.wp-block-buttons > .wp-block-button[class*="wp-block-button__width"] { width: calc(var(--wp--block-button--width) * 1% - var(--wp--style--block-gap, 0.5em) * (1 - var(--wp--block-button--width) / 100)); }
+
+/* The `__width-N` preset set is what the editor's width control wrote up to 7.0 and
+   still writes for the four presets, so a site whose allowlist permits `core/button`
+   will hit it. Without these the control is silently inert — the same class of
+   failure this partial exists to prevent — and the selectors are scoped to
+   `.wp-block-buttons > .wp-block-button`, so they cost a row that never uses them
+   nothing. Carried for that reason (thetheme-core-046). */
 .wp-block-buttons > .wp-block-button.wp-block-button__width-25 { width: calc(25% - var(--wp--style--block-gap, 0.5em) * 0.75); }
 .wp-block-buttons > .wp-block-button.wp-block-button__width-50 { width: calc(50% - var(--wp--style--block-gap, 0.5em) * 0.5); }
 .wp-block-buttons > .wp-block-button.wp-block-button__width-75 { width: calc(75% - var(--wp--style--block-gap, 0.5em) * 0.25); }
-.wp-block-buttons > .wp-block-button.wp-block-button__width-100 { flex-basis: 100%; width: 100%; }
+.wp-block-buttons > .wp-block-button.wp-block-button__width-100 { width: 100%; flex-basis: 100%; }
+
+/* 7.1+ only, the vertical half of the free-form width (`:55-57` at 7.1.2). */
+.wp-block-buttons.is-vertical > .wp-block-button[class*="wp-block-button__width"] { width: calc(var(--wp--block-button--width) * 1%); }
 
 .wp-block-buttons.is-vertical > .wp-block-button.wp-block-button__width-25 { width: 25%; }
 .wp-block-buttons.is-vertical > .wp-block-button.wp-block-button__width-50 { width: 50%; }
 .wp-block-buttons.is-vertical > .wp-block-button.wp-block-button__width-75 { width: 75%; }
 
+/* Not carried: core's `is-style-squared` / `no-border-radius` pair, because the
+   second of them is `border-radius: 0 !important` and this partial does not ship an
+   `!important` into a theme that then cannot override it. A project that allows the
+   squared style copies those two rules from `wp-includes/blocks/button/style.css`
+   itself, having decided it wants them. */
+
 /* ── the default appearance `global-styles` used to paint ───────────────────── */
 
+/* `wp-includes/theme.json` `styles.elements.button`, identical at 7.0.4 and 7.1.2,
+   emitted by core as `:root :where(.wp-element-button, .wp-block-button__link)`
+   (`class-wp-theme-json.php`, ELEMENTS `button`). It stays ABOVE the outline block:
+   both are (0,1,0), and core's `global-styles` prints the outline variation
+   (`theme.json` `styles.blocks.core/button.variations.outline`) after this, so the
+   outline's transparent background wins by source order there and here. */
 :root :where(.wp-element-button, .wp-block-button__link) {
     background-color: #32373c;
     border-width: 0;
@@ -167,27 +231,21 @@
     padding: calc(0.667em + 2px) calc(1.333em + 2px);
 }
 
-/* ── the `is-style-outline` variant ─────────────────────────────────────────── */
+/* ── the `is-style-outline` variant (7.0.4 blocks/button/style.css:72-85) ──────── */
 
-:root :where(.wp-block-button .wp-block-button__link.is-style-outline),
-:root :where(.wp-block-button.is-style-outline > .wp-block-button__link) {
-    border: 2px solid;
+:root :where(.wp-block-button.is-style-outline > .wp-block-button__link),
+:root :where(.wp-block-button .wp-block-button__link.is-style-outline) {
+    border: 2px solid currentColor;
     padding: 0.667em 1.333em;
 }
 
-:root :where(.wp-block-button .wp-block-button__link.is-style-outline:not(.has-text-color)),
-:root :where(.wp-block-button.is-style-outline > .wp-block-button__link:not(.has-text-color)) {
+:root :where(.wp-block-button.is-style-outline > .wp-block-button__link:not(.has-text-color)),
+:root :where(.wp-block-button .wp-block-button__link.is-style-outline:not(.has-text-color)) {
     color: currentColor;
 }
 
-:root :where(.wp-block-button .wp-block-button__link.is-style-outline:not(.has-background)),
-:root :where(.wp-block-button.is-style-outline > .wp-block-button__link:not(.has-background)) {
-    background-color: initial;
+:root :where(.wp-block-button.is-style-outline > .wp-block-button__link:not(.has-background)),
+:root :where(.wp-block-button .wp-block-button__link.is-style-outline:not(.has-background)) {
+    background-color: transparent;
     background-image: none;
 }
-
-/* Not carried: core's `is-style-squared` / `no-border-radius` pair, because the
-   second of them is `border-radius: 0 !important` and this partial does not ship an
-   `!important` into a theme that then cannot override it. A project that allows the
-   squared style copies those two rules from `wp-includes/blocks/button/style.css`
-   itself, having decided it wants them. */

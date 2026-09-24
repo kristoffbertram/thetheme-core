@@ -345,17 +345,27 @@ Nine more are queued behind it: the consumers still on the
 by hand each time, is transcribed differently each time — the nine reset-on sites
 differ from each other in exactly that way. A file cannot be transcribed wrong.
 
-**What that argument does not buy, learned the hard way (2026-09-22, the same day).**
-A file cannot be transcribed wrong, but it can be *authored* wrong, and then every
-port inherits one defect instead of nine different ones. The first cut shipped
-`.wp-block-buttons .wp-block-button__link { width: 100% }` — a selector core writes
-nowhere. Pasted faithfully it stretches every button in a row into a stacked full-width
-bar, so a port was broken precisely *by* trusting the file. Two sites had already taken
-it (vigc.be, thermo-king.co.uk) before it was caught. The rule that follows: **every
-width core writes for this block is scoped** — to `.has-custom-width`, to a
-`wp-block-button__width-N` class, or to a centred button in an unjustified row — and
-the file now says so in its own docblock. A change to `reference/` is re-derived
-against `wp-includes/` line by line, never edited from memory.
+**What that argument does not buy, learned the hard way (2026-09-22, and again
+2026-09-24).** A file cannot be transcribed wrong, but it can be *authored* wrong, and
+then every port inherits one defect instead of nine different ones. The first cut
+shipped `.wp-block-buttons .wp-block-button__link { width: 100% }`, blamed for
+stretching every button in a row into a stacked full-width bar; two sites had already
+taken it (vigc.be, thermo-king.co.uk) before it was caught, and the correction
+(thetheme-core-046) removed it as a selector "core writes nowhere". That correction read
+a WordPress **6.6.1** tree — and every consumer serves **7.0.4–7.1.2**, where core writes
+exactly that line (`blocks/buttons/style.css:57`) plus `height: 100%; align-content:
+center` on the anchor (`blocks/button/style.css:7-8`). Both are latent on core's own
+markup because core keeps the wrapper content-sized (`.wp-block-buttons >
+.wp-block-button { display: inline-block; margin: 0 }`, a flex item under the layout
+base's `align-items: center`); the stacked bars appear only when a port renders the
+wrapper as a plain block with no flex row around it. Two rules follow, and the file's
+docblock carries both: **a re-derive reads the lowest WordPress any consumer serves and
+diff-checks the highest** — never a tree nothing on the package renders — and **the
+wrapper line is the one a port must never drop**, with the layout base (`body
+.is-layout-flex { display: flex }`, `.is-layout-flex { flex-wrap: wrap; align-items:
+center }`, global-styles output the reset dequeues) confirmed in the site's own
+`_wp.scss`. A change to `reference/` is re-derived against `wp-includes/` line by line,
+never edited from memory. (thetheme-core-051)
 
 **The `__width-N` set is carried** (thetheme-core-046). It is the output of the
 editor's own width control, so a site whose allowlist permits `core/button` reaches it;
@@ -369,8 +379,10 @@ reference and has become an asset the package owns — which is the fight the re
 exists to end, restarted from the other side.
 
 **What is deliberately not in it.** No `display: flex` on `.wp-block-buttons`: the row's
-flex comes from the layout support (`core-block-supports`), which the reset leaves
-registered, and restating it would be a second mechanism plus a fight with the block-gap
+flex comes from the layout base global-styles prints (`body .is-layout-flex { display:
+flex }`, re-carried by the site's `_wp.scss` because the reset dequeues it) plus the
+per-container rules of the layout support (`core-block-supports`, which the reset leaves
+registered); restating it would be a second mechanism plus a fight with the block-gap
 variable. No `!important`, which costs core's `no-border-radius` rule — a project that
 wants the squared style copies that pair itself, having decided it does. The default
 appearance is `:root :where(.wp-element-button, .wp-block-button__link)` at `(0,1,0)`:
@@ -378,7 +390,8 @@ enough to paint an unstyled button, little enough that any two-part theme select
 
 **Derived from core, not from a site.** `wp-includes/blocks/buttons/style.css`,
 `wp-includes/blocks/button/style.css` and `wp-includes/theme.json`
-`styles.elements.button`, read from a WordPress tree in the estate — so it can be
-re-derived rather than trusted. `wp-element-button` is on markup saved by WP 6.1+ and
+`styles.elements.button`, read from the WordPress trees the estate serves (7.0.4 as the
+floor, 7.1.2 as the diff-check, 2026-09-24) — so it can be re-derived rather than
+trusted. 7.1's free-form width pair is carried and labelled *7.1+ only*. `wp-element-button` is on markup saved by WP 6.1+ and
 older content carries only `wp-block-button__link`, which is why core names both and so
 does this.
