@@ -146,11 +146,24 @@ function thetheme_enqueue_subsite_assets(): void {
     // Fallback: www. Only reached when no subsite resolved (the branch above returns
     // for any resolved entry, declared assets or not). Filterable so a theme built to
     // another layout can point at it without moving its build output.
-    $style_rel  = ltrim((string) apply_filters('thetheme_default_stylesheet', 'assets/css/www/app.css'), '/');
-    $script_rel = ltrim((string) apply_filters('thetheme_default_script', 'assets/js/www/app.js'), '/');
+    $style_rel   = ltrim((string) apply_filters('thetheme_default_stylesheet', 'assets/css/www/app.css'), '/');
+    $script_rel  = ltrim((string) apply_filters('thetheme_default_script', 'assets/js/www/app.js'), '/');
+    $style_path  = get_stylesheet_directory() . '/' . $style_rel;
+    $script_path = get_stylesheet_directory() . '/' . $script_rel;
 
-    wp_enqueue_style('thetheme', get_stylesheet_directory_uri() . '/' . $style_rel, [], $ver);
-    wp_enqueue_script('thetheme', get_stylesheet_directory_uri() . '/' . $script_rel, [], $ver, true);
+    wp_enqueue_style(
+        'thetheme',
+        get_stylesheet_directory_uri() . '/' . $style_rel,
+        [],
+        file_exists($style_path) ? filemtime($style_path) : $ver
+    );
+    wp_enqueue_script(
+        'thetheme',
+        get_stylesheet_directory_uri() . '/' . $script_rel,
+        [],
+        file_exists($script_path) ? filemtime($script_path) : $ver,
+        true
+    );
 }
 add_action('wp_enqueue_scripts', 'thetheme_enqueue_subsite_assets', 20);
 
