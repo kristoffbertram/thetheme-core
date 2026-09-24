@@ -46,11 +46,14 @@ requires, enqueues or compiles anything under it, so the runtime is unchanged wh
 is present or not. It exists because the alternative for a rule set every port needs
 was prose in this README, which a port reads once and copies by hand differently each
 time. A file that cannot be transcribed wrong is the point — which puts the whole weight
-on the file being right: `_wp-buttons.scss` shipped one rule core does not write and
-every port that pasted it inherited the breakage (see the file's own *THE TRAP* note).
-A change here is a change to every future port, so it is re-derived against
-`wp-includes/`, not edited from memory. The moment something under `reference/` is
-*loaded* by the engine, it has stopped being reference.
+on the file being right, and `_wp-buttons.scss` has been wrong twice: the first cut
+shipped a width that stretched every button in a row, and the correction that removed it
+read a WordPress 6.6.1 tree when every consumer serves 7.x, where core writes that very
+width itself (see the file's own *THE TRAP* note). A change here is a change to every
+future port, so it is re-derived against the `wp-includes/` the estate actually serves —
+the lowest version any consumer runs, diff-checked against the highest — never edited
+from memory and never read from a tree nothing on the package renders. The moment
+something under `reference/` is *loaded* by the engine, it has stopped being reference.
 
 ## The carve-out contract (core stays byte-identical)
 
@@ -771,6 +774,29 @@ core-tracking block, alongside any intentional deviations.
   wrapper form — are labelled as such in place. Still copy-source, so **no runtime
   behaviour changes**; this rides the next behaviour cut rather than being its own release.
   A port that already pasted the old file re-pastes the button section.
+- **unreleased** — `reference/_wp-buttons.scss` re-derived against **WP 7.0.4, diff-checked
+  against 7.1.2** — the lowest and highest versions any consumer serves. The entry above
+  read a 6.6.1 tree, which nothing on the package renders, and its premise is false on 7.x:
+  core writes `.wp-block-buttons .wp-block-button__link { width: 100% }` itself
+  (`blocks/buttons/style.css:57`) and pairs it with `height: 100%; align-content: center`
+  on the anchor (`blocks/button/style.css:7-8`). Both are back, because they are core's
+  and they are latent while the wrapper is sized as core sizes it — the
+  `.wp-block-buttons > .wp-block-button { display: inline-block; margin: 0 }` line the
+  file now marks as the one a port must never drop, inside a row the site's own
+  `_wp.scss` lays out with `body .is-layout-flex { display: flex }` and `.is-layout-flex
+  { flex-wrap: wrap; align-items: center }` (global-styles' layout base, which the reset
+  dequeues). Measured in headless Chrome over core's saved markup: a two-button row is
+  unchanged (each anchor content-width), a lone `wp:button` is unchanged, a `__width-50`
+  button is unchanged; the visible deltas are core's own — a centred button in an
+  unjustified row now fills the row, and the editor's *Stretch* vertical alignment now
+  gives equal-height buttons. Also from the 7.0.4 read: `box-sizing` on the row is core
+  now (label dropped), the outline border is `currentColor` and its background
+  `transparent`, and 7.1's free-form width pair (`[class*=wp-block-button__width]`,
+  `--wp--block-button--width`) is carried, labelled *7.1+ only*. The one remaining
+  non-core line, `.wp-block-button.alignright`, stays labelled. Still copy-source, so
+  **no runtime behaviour changes** and it rides the next behaviour cut. A port that pasted
+  the section re-pastes it from HEAD and confirms the wrapper line and the layout base
+  in its own `_wp.scss`.
 - **unreleased** — **behaviour change:** the www asset fallback now cache-busts on the
   file's mtime. `thetheme_enqueue_subsite_assets()` in `subsites.php` versioned the
   front-end stylesheet and script on the theme `Version` on every page where no subsite
