@@ -143,6 +143,10 @@ Paths are relative to `get_stylesheet_directory()`; a leading `/` is stripped, s
 `/css/app.css` and `css/app.css` are the same thing. Returning `''` from
 `thetheme_login_stylesheet` switches the login stylesheet off.
 
+Every resolved front-end and editor path cache-busts on the file's mtime — the `?ver=`
+WordPress appends is `filemtime()` of the file on disk, and the theme `Version` only when
+the file is missing — so a rebuild is picked up without a `Version` bump.
+
 **The three front-end/editor fallbacks fire less often than they look.** The front-end
 pair is reached only when no subsite resolves at all — any resolved entry returns
 before them, declared assets or not. The editor fallback is reached when no subsite
@@ -767,3 +771,15 @@ core-tracking block, alongside any intentional deviations.
   wrapper form — are labelled as such in place. Still copy-source, so **no runtime
   behaviour changes**; this rides the next behaviour cut rather than being its own release.
   A port that already pasted the old file re-pastes the button section.
+- **unreleased** — **behaviour change:** the www asset fallback now cache-busts on the
+  file's mtime. `thetheme_enqueue_subsite_assets()` in `subsites.php` versioned the
+  front-end stylesheet and script on the theme `Version` on every page where no subsite
+  resolved, while its own subsite branch and the editor stylesheet already used
+  `filemtime`. A rebuilt `app.css` was therefore served under an unchanged `?ver=` and
+  browsers kept the old sheet — *"I deployed and nothing changed"*. Both enqueues now
+  use `filemtime` when the file exists and `Version` only when it is missing, matching
+  their siblings. **On every consumer that re-copies, the `?ver=` on those two URLs moves
+  from the theme `Version` to the file's mtime, and consumers stop needing a `Version`
+  bump per build.** Until a site re-copies, its fallback still versions on `Version`, so
+  bumping `style.css` per CSS change stays the working rule there. See *Where asset
+  paths come from*.
