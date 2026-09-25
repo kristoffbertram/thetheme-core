@@ -748,6 +748,18 @@ core-tracking block, alongside any intentional deviations.
     licence file.
   - Repo hygiene: `.gitattributes` marks `HANDBOOK.md`, `CLAUDE.md` and `.DS_Store`
     `export-ignore`, so none of them reaches a Composer dist.
+- **v1.4.2** (2026-09-25) — **the www asset fallback cache-busts on `filemtime`, not the theme
+  `Version:`.** `subsites.php`'s subsite branch already versioned styles and scripts on
+  `filemtime`; the `www` fallback — the branch every non-subsite page takes — versioned on
+  `wp_get_theme()->get('Version')` alone. A rebuilt stylesheet therefore kept serving under the
+  old `?ver=`, and browsers held the previous copy indefinitely. It presented as "I deployed and
+  nothing changed": thermo-king.co.uk lost its impact-blue footer on 2026-09-24 and
+  thermoking-globalsolutions lost Manrope on 2026-09-25, both fixed by a hard refresh and neither
+  leaving a trace in any log. **Every consumer should re-vendor** — the bug is silent, affects all
+  of them, and the fix needs no change on their side. Also in this release: `reference/_wp-buttons.scss`
+  re-derived against WP 7.0.4 and diff-checked to 7.1.2, and the stretched-row width core never writes
+  dropped from the button copy-source.
+
 - **v1.4.1** (2026-09-22) — the line-height support name corrected.
   `editor.php` declared `editor-line-height`, a name WordPress has never read; it now
   declares `custom-line-height`, the one `wp-includes/block-editor.php:815` maps to
