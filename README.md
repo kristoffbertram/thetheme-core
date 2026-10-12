@@ -291,8 +291,8 @@ wrapper — `.wp-block-buttons .wp-block-button a` — and that selector covers 
 button the theme's own patterns emit, so the site looks finished. It does not cover a
 `wp:button` placed **without** a `wp:buttons` wrapper, which the editor permits and
 content authors do. With `wp-block-library` and `global-styles` both gone, such a
-button is bare anchor text on a page that is otherwise correct. vigc.be carried three
-of them on its home page until 2026-09-22.
+button is bare anchor text on a page that is otherwise correct. One client site
+carried three of them on its home page until 2026-09-22.
 
 So the partial restates what the two dequeued handles gave: the `.wp-block-buttons`
 row (`is-content-justification-*`, `is-vertical`), `.wp-block-button.aligncenter` /
@@ -748,18 +748,6 @@ core-tracking block, alongside any intentional deviations.
     licence file.
   - Repo hygiene: `.gitattributes` marks `HANDBOOK.md`, `CLAUDE.md` and `.DS_Store`
     `export-ignore`, so none of them reaches a Composer dist.
-- **v1.4.2** (2026-09-25) — **the www asset fallback cache-busts on `filemtime`, not the theme
-  `Version:`.** `subsites.php`'s subsite branch already versioned styles and scripts on
-  `filemtime`; the `www` fallback — the branch every non-subsite page takes — versioned on
-  `wp_get_theme()->get('Version')` alone. A rebuilt stylesheet therefore kept serving under the
-  old `?ver=`, and browsers held the previous copy indefinitely. It presented as "I deployed and
-  nothing changed": thermo-king.co.uk lost its impact-blue footer on 2026-09-24 and
-  thermoking-globalsolutions lost Manrope on 2026-09-25, both fixed by a hard refresh and neither
-  leaving a trace in any log. **Every consumer should re-vendor** — the bug is silent, affects all
-  of them, and the fix needs no change on their side. Also in this release: `reference/_wp-buttons.scss`
-  re-derived against WP 7.0.4 and diff-checked to 7.1.2, and the stretched-row width core never writes
-  dropped from the button copy-source.
-
 - **v1.4.1** (2026-09-22) — the line-height support name corrected.
   `editor.php` declared `editor-line-height`, a name WordPress has never read; it now
   declares `custom-line-height`, the one `wp-includes/block-editor.php:815` maps to
@@ -774,50 +762,62 @@ core-tracking block, alongside any intentional deviations.
     finished. Copy-source only: nothing in the package requires, enqueues or compiles it, so
     **no runtime behaviour changes and a consumer that re-vendors gains a file it must still
     paste**. See *The button block is the exception the package ships*.
-- **unreleased** — `reference/_wp-buttons.scss` re-derived against WP 6.6.1.
-  It shipped in `v1.4.1` with an unscoped `.wp-block-buttons .wp-block-button__link
-  { width: 100% }` that core writes nowhere: pasted faithfully it stretched **every**
-  button in a row, so a port was broken *by* following the reference. That line is gone,
-  core's own scoped widths are in (`.has-custom-width` pair, the `:not(.is-content-
-  justification-*) .wp-block-button.aligncenter` block, and the `wp-block-button__width-N`
-  set the editor's width control writes), the `[style*=text-decoration]` pairs are carried,
-  and the docblock now names the trap so the next re-derive cannot reintroduce it. The two
-  rules that are *not* core — `box-sizing` on the row, the `.wp-block-button.alignright`
-  wrapper form — are labelled as such in place. Still copy-source, so **no runtime
-  behaviour changes**; this rides the next behaviour cut rather than being its own release.
-  A port that already pasted the old file re-pastes the button section.
-- **unreleased** — `reference/_wp-buttons.scss` re-derived against **WP 7.0.4, diff-checked
-  against 7.1.2** — the lowest and highest versions any consumer serves. The entry above
-  read a 6.6.1 tree, which nothing on the package renders, and its premise is false on 7.x:
-  core writes `.wp-block-buttons .wp-block-button__link { width: 100% }` itself
-  (`blocks/buttons/style.css:57`) and pairs it with `height: 100%; align-content: center`
-  on the anchor (`blocks/button/style.css:7-8`). Both are back, because they are core's
-  and they are latent while the wrapper is sized as core sizes it — the
-  `.wp-block-buttons > .wp-block-button { display: inline-block; margin: 0 }` line the
-  file now marks as the one a port must never drop, inside a row the site's own
-  `_wp.scss` lays out with `body .is-layout-flex { display: flex }` and `.is-layout-flex
-  { flex-wrap: wrap; align-items: center }` (global-styles' layout base, which the reset
-  dequeues). Measured in headless Chrome over core's saved markup: a two-button row is
-  unchanged (each anchor content-width), a lone `wp:button` is unchanged, a `__width-50`
-  button is unchanged; the visible deltas are core's own — a centred button in an
-  unjustified row now fills the row, and the editor's *Stretch* vertical alignment now
-  gives equal-height buttons. Also from the 7.0.4 read: `box-sizing` on the row is core
-  now (label dropped), the outline border is `currentColor` and its background
-  `transparent`, and 7.1's free-form width pair (`[class*=wp-block-button__width]`,
-  `--wp--block-button--width`) is carried, labelled *7.1+ only*. The one remaining
-  non-core line, `.wp-block-button.alignright`, stays labelled. Still copy-source, so
-  **no runtime behaviour changes** and it rides the next behaviour cut. A port that pasted
-  the section re-pastes it from HEAD and confirms the wrapper line and the layout base
-  in its own `_wp.scss`.
-- **unreleased** — **behaviour change:** the www asset fallback now cache-busts on the
-  file's mtime. `thetheme_enqueue_subsite_assets()` in `subsites.php` versioned the
-  front-end stylesheet and script on the theme `Version` on every page where no subsite
-  resolved, while its own subsite branch and the editor stylesheet already used
-  `filemtime`. A rebuilt `app.css` was therefore served under an unchanged `?ver=` and
-  browsers kept the old sheet — *"I deployed and nothing changed"*. Both enqueues now
-  use `filemtime` when the file exists and `Version` only when it is missing, matching
-  their siblings. **On every consumer that re-copies, the `?ver=` on those two URLs moves
-  from the theme `Version` to the file's mtime, and consumers stop needing a `Version`
-  bump per build.** Until a site re-copies, its fallback still versions on `Version`, so
-  bumping `style.css` per CSS change stays the working rule there. See *Where asset
-  paths come from*.
+
+- **v1.4.2** (2026-09-25) — **the www asset fallback cache-busts on `filemtime`, not the theme
+  `Version:`.** `subsites.php`'s subsite branch already versioned styles and scripts on
+  `filemtime`; the `www` fallback — the branch every non-subsite page takes — versioned on
+  `wp_get_theme()->get('Version')` alone. A rebuilt stylesheet therefore kept serving under the
+  old `?ver=`, and browsers held the previous copy indefinitely. It presented as "I deployed and
+  nothing changed": one estate site lost its footer colour on 2026-09-24 and another
+  lost its heading font on 2026-09-25, both fixed by a hard refresh and neither
+  leaving a trace in any log. **Every consumer should re-vendor** — the bug is silent, affects all
+  of them, and the fix needs no change on their side. Also in this release: `reference/_wp-buttons.scss`
+  re-derived against WP 7.0.4 and diff-checked to 7.1.2, and the stretched-row width core never writes
+  dropped from the button copy-source.
+  - `reference/_wp-buttons.scss` re-derived against WP 6.6.1.
+    It shipped in `v1.4.1` with an unscoped `.wp-block-buttons .wp-block-button__link
+    { width: 100% }` that core writes nowhere: pasted faithfully it stretched **every**
+    button in a row, so a port was broken *by* following the reference. That line is gone,
+    core's own scoped widths are in (`.has-custom-width` pair, the `:not(.is-content-
+    justification-*) .wp-block-button.aligncenter` block, and the `wp-block-button__width-N`
+    set the editor's width control writes), the `[style*=text-decoration]` pairs are carried,
+    and the docblock now names the trap so the next re-derive cannot reintroduce it. The two
+    rules that are *not* core — `box-sizing` on the row, the `.wp-block-button.alignright`
+    wrapper form — are labelled as such in place. Still copy-source, so **no runtime
+    behaviour changes**; this rides the next behaviour cut rather than being its own release.
+    A port that already pasted the old file re-pastes the button section.
+  - `reference/_wp-buttons.scss` re-derived against **WP 7.0.4, diff-checked
+    against 7.1.2** — the lowest and highest versions any consumer serves. The entry above
+    read a 6.6.1 tree, which nothing on the package renders, and its premise is false on 7.x:
+    core writes `.wp-block-buttons .wp-block-button__link { width: 100% }` itself
+    (`blocks/buttons/style.css:57`) and pairs it with `height: 100%; align-content: center`
+    on the anchor (`blocks/button/style.css:7-8`). Both are back, because they are core's
+    and they are latent while the wrapper is sized as core sizes it — the
+    `.wp-block-buttons > .wp-block-button { display: inline-block; margin: 0 }` line the
+    file now marks as the one a port must never drop, inside a row the site's own
+    `_wp.scss` lays out with `body .is-layout-flex { display: flex }` and `.is-layout-flex
+    { flex-wrap: wrap; align-items: center }` (global-styles' layout base, which the reset
+    dequeues). Measured in headless Chrome over core's saved markup: a two-button row is
+    unchanged (each anchor content-width), a lone `wp:button` is unchanged, a `__width-50`
+    button is unchanged; the visible deltas are core's own — a centred button in an
+    unjustified row now fills the row, and the editor's *Stretch* vertical alignment now
+    gives equal-height buttons. Also from the 7.0.4 read: `box-sizing` on the row is core
+    now (label dropped), the outline border is `currentColor` and its background
+    `transparent`, and 7.1's free-form width pair (`[class*=wp-block-button__width]`,
+    `--wp--block-button--width`) is carried, labelled *7.1+ only*. The one remaining
+    non-core line, `.wp-block-button.alignright`, stays labelled. Still copy-source, so
+    **no runtime behaviour changes** and it rides the next behaviour cut. A port that pasted
+    the section re-pastes it from HEAD and confirms the wrapper line and the layout base
+    in its own `_wp.scss`.
+  - **behaviour change:** the www asset fallback now cache-busts on the
+    file's mtime. `thetheme_enqueue_subsite_assets()` in `subsites.php` versioned the
+    front-end stylesheet and script on the theme `Version` on every page where no subsite
+    resolved, while its own subsite branch and the editor stylesheet already used
+    `filemtime`. A rebuilt `app.css` was therefore served under an unchanged `?ver=` and
+    browsers kept the old sheet — *"I deployed and nothing changed"*. Both enqueues now
+    use `filemtime` when the file exists and `Version` only when it is missing, matching
+    their siblings. **On every consumer that re-copies, the `?ver=` on those two URLs moves
+    from the theme `Version` to the file's mtime, and consumers stop needing a `Version`
+    bump per build.** Until a site re-copies, its fallback still versions on `Version`, so
+    bumping `style.css` per CSS change stays the working rule there. See *Where asset
+    paths come from*.
