@@ -1,6 +1,15 @@
 /**
  * Core-block parity — `core/buttons` and `core/button`.
  *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * This ONE file is GPLv2-or-later, not MIT like the rest of the package. It is
+ * derived line by line from WordPress core's own block stylesheets
+ * (`wp-includes/blocks/*/style.css`, see Sources below), and those are GPLv2+,
+ * so what is derived from them is too. `LICENSE` (MIT) covers everything else in
+ * the package; this header is the exception, and it is the file's own label
+ * rather than a statement about the package.
+ *
  * COPY-SOURCE. Nothing in this package loads this file; it is not enqueued, not
  * imported, not compiled here. It is the baseline a port pastes into its own
  * `_wp.scss` partial (see README, "`_wp.scss` is the answer") so the button block
@@ -14,7 +23,7 @@
  * the theme's own patterns emit. It does not match a `wp:button` placed WITHOUT a
  * `wp:buttons` wrapper, which the editor permits and content authors do. Such a
  * button then renders as bare anchor text, on a page that otherwise looks correct.
- * vigc.be shipped three of them on its home page for months (2026-09-22).
+ * One client site shipped three of them on its home page for months (2026-09-22).
  *
  * Sources, so this can be re-derived rather than trusted:
  *   - `wp-includes/blocks/buttons/style.css`  → the `.wp-block-buttons` rules
