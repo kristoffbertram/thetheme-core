@@ -164,3 +164,7 @@ as `^1.4`. Entries moved here verbatim from the README's former *Status* section
     bump per build.** Until a site re-copies, its fallback still versions on `Version`, so
     bumping `style.css` per CSS change stays the working rule there. See *Where asset
     paths come from*.
+- **v1.4.3** (2026-10-16) — **replaces v1.4.0, v1.4.1 and v1.4.2, which are withdrawn.** Same code as
+  v1.4.2; the repository's internal working notes and client references that those three tags still
+  carried are gone, and the README gains the quickstart and the *what this is not* section. Pin `^1.4`
+  as before; a lock on v1.4.0–v1.4.2 should move to v1.4.3.
